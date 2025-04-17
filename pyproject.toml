@@ -1,0 +1,14 @@
+[tool.poetry]
+name = "pydrifter"
+version = "0.1.2"
+description = "Data drift checking for ML projects"
+authors = ["aesedeu <aesedeu@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
