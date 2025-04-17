@@ -19,6 +19,11 @@ class Suite(ABC):
         self.data_control = data_control
         self.data_treatment = data_treatment
 
+        if (data_control.isna().sum().sum()) != 0:
+            raise ValueError("Please replace NaN first in data_control")
+        if (data_treatment.isna().sum().sum()) != 0:
+            raise ValueError("Please replace NaN first in data_treatment")
+
         if len(self.data_treatment) < 1000 or len(self.data_control) < 1000:
             warnings.warn(f"data_control: {self.data_control.shape}")
             warnings.warn(f"data_treatment: {self.data_treatment.shape}")
@@ -32,10 +37,9 @@ class Suite(ABC):
         for test_name in self.tests:
             # print(test_name.__name__())
             for column in features:
-                data_control_statistics = calculate_statistics(self.data_control[column])
-                data_treatment_statistics = calculate_statistics(self.data_treatment[column])
-
                 if column in column_mapping.numerical:
+                    data_control_statistics = calculate_statistics(self.data_control[column])
+                    data_treatment_statistics = calculate_statistics(self.data_treatment[column])
 
                     # p_value = test(data_1=self.data_control[column], data_2=self.data_treatment[column])
                     criterion = test_name(
