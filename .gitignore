@@ -2,3 +2,4 @@
 dist
 **/*.csv
 **/*.ipynb
+**/__pycache__
