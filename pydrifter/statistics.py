@@ -7,8 +7,8 @@ from abc import ABC
 import pendulum
 
 
-def mean_bootstrap(data: np.ndarray, size: int = 20_000):
-    return np.array([float((np.random.choice(data, int(len(data) * 0.5))).mean()) for _ in range(size)])
+def mean_bootstrap(data: np.ndarray, size: int = 50_000):
+    return np.array([float((np.random.choice(data, len(data), replace=True)).mean()) for _ in range(size)])
 
 def calculate_statistics(data: np.array):
     return {
@@ -37,9 +37,9 @@ class TTest(ABC):
     @property
     def __name__(self):
         if self.var:
-            return f"Student t-test"
+            return f"Welch's test (sample mean)"
         else:
-            return f"Student t-test (Welch's test)"
+            return f"Welch's test (sample mean)"
 
     def run(self):
         statistics, p_value = ttest_ind(
@@ -56,6 +56,7 @@ class TTest(ABC):
             data={
                 "test_datetime": [pendulum.now().to_datetime_string()],
                 "feature_name": [self.feature_name],
+                "feature_type": ["numerical"],
                 "control_mean": [data_1_statistics["mean"]],
                 "treatment_mean": [data_2_statistics["mean"]],
                 "control_std": [data_1_statistics["std"]],
@@ -100,6 +101,7 @@ class Wasserstein(ABC):
             data={
                 "test_datetime": [pendulum.now().to_datetime_string()],
                 "feature_name": [self.feature_name],
+                "feature_type": ["numerical"],
                 "control_mean": [data_1_statistics["mean"]],
                 "treatment_mean": [data_2_statistics["mean"]],
                 "control_std": [data_1_statistics["std"]],
@@ -164,6 +166,7 @@ class KLDivergence(ABC):
             data={
                 "test_datetime": [pendulum.now().to_datetime_string()],
                 "feature_name": [self.feature_name],
+                "feature_type": ["numerical"],
                 "control_mean": [data_1_statistics["mean"]],
                 "treatment_mean": [data_2_statistics["mean"]],
                 "control_std": [data_1_statistics["std"]],
@@ -218,6 +221,7 @@ class PSI(ABC):
             {
                 "test_datetime": [pendulum.now().to_datetime_string()],
                 "feature_name": [self.feature_name],
+                "feature_type": ["numerical"],
                 "control_mean": [np.mean(self.data_1)],
                 "treatment_mean": [np.mean(self.data_2)],
                 "control_std": [np.std(self.data_1)],

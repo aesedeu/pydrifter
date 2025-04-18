@@ -29,7 +29,7 @@ class TableDrift(ABC):
     def __clean_data(self):
         pass
 
-    def run_data_health(self):
+    def run_data_health(self, clean: bool = True):
         pass
 
     def __check_nan(self):
@@ -45,9 +45,9 @@ class TableDrift(ABC):
         self.__check_nan()
 
         result_numerical = pd.DataFrame()
-
         if not features:
             features = column_mapping.numerical
+
         for test_name in self.tests:
             for column in features:
                 if column in column_mapping.numerical:
@@ -76,6 +76,8 @@ class TableDrift(ABC):
                         "statistics",
                         "p_value",
                     ]].round(4)
+
+                    print(f"{test_name.__name__} for '{column}'".ljust(50, ".") + "SUCCEED")
 
         result = result_numerical.sort_values("conclusion", ascending=True).reset_index(drop=True)
 
