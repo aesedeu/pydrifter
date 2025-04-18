@@ -50,7 +50,26 @@ class Suite(ABC):
                     result_numerical = pd.concat(
                         (result_numerical, statistics_result), axis=0, ignore_index=True
                     )
+                    result_numerical[
+                        [
+                            "control_mean",
+                            "treatment_mean",
+                            "control_std",
+                            "treatment_std",
+                            "statistics",
+                            "p_value",
+                        ]
+                    ] = result_numerical[[
+                        "control_mean",
+                        "treatment_mean",
+                        "control_std",
+                        "treatment_std",
+                        "statistics",
+                        "p_value",
+                    ]].round(4)
 
         return tabulate(
-            result_numerical.astype(str), headers=result_numerical.columns, tablefmt="pretty"
+            result_numerical.sort_values("conclusion", ascending=False).reset_index(drop=True),
+            headers=result_numerical.columns,
+            tablefmt="pretty",
         )
