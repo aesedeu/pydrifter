@@ -3,8 +3,11 @@ import pandas as pd
 from scipy.stats import ttest_ind
 from scipy.stats import wasserstein_distance
 from scipy.stats import entropy
+from scipy.stats import ks_2samp
 from abc import ABC
 import pendulum
+
+from .preprocessing import GlobalConfig
 
 
 def mean_bootstrap(data: np.ndarray, size: int = 50_000):
@@ -70,6 +73,50 @@ class TTest(ABC):
         return statistics_result
 
 
+class KolmogorovSmirnov(ABC):
+
+    def __init__(
+        self,
+        data_1: np.ndarray,
+        data_2: np.ndarray,
+        feature_name: str = "UNKNOWN_FEATURE",
+        alpha: float = 0.05,
+    ):
+        self.data_1 = data_1
+        self.data_2 = data_2
+        self.feature_name = feature_name
+        self.alpha = alpha
+
+    @property
+    def __name__(self):
+        return f"Kolmogorov-Smirnov test"
+
+    def run(self):
+        data_1_statistics = calculate_statistics(self.data_1)
+        data_2_statistics = calculate_statistics(self.data_2)
+
+        statistics, p_value = ks_2samp(self.data_1, self.data_2)
+
+        result_status = "OK" if p_value >= self.alpha else "FAILED"
+
+        statistics_result = pd.DataFrame(
+            data={
+                "test_datetime": [pendulum.now().to_datetime_string()],
+                "feature_name": [self.feature_name],
+                "feature_type": ["numerical"],
+                "control_mean": [data_1_statistics["mean"]],
+                "treatment_mean": [data_2_statistics["mean"]],
+                "control_std": [data_1_statistics["std"]],
+                "treatment_std": [data_2_statistics["std"]],
+                "test_name": [self.__name__],
+                "p_value": [p_value],
+                "statistics": [statistics],
+                "conclusion": [result_status],
+            }
+        )
+        return statistics_result
+
+
 class Wasserstein(ABC):
 
     def __init__(
@@ -92,7 +139,7 @@ class Wasserstein(ABC):
 
         statistics = wasserstein_distance(self.data_1, self.data_2)
 
-        if (statistics / data_1_statistics["std"]) < 1:
+        if (statistics / data_1_statistics["std"]) < 0.1:
             conclusion = "OK"
         else:
             conclusion = "FAILED"

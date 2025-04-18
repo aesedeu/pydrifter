@@ -1,25 +1,32 @@
 from abc import ABC
 import pandas as pd
-from ..preprocessing import ConfigMap
+from ..preprocessing import DataConfig, GlobalConfig
 from ..statistics import calculate_statistics, TTest
-from typing import Callable
+from typing import Callable, Type
 from tabulate import tabulate
 from ..auxiliaries import *
 
 warnings.showwarning = custom_warning
 
 
-class TableDrift(ABC):
+class IncomeTableDrift(ABC):
 
     def __init__(
         self,
         tests: list[Callable],
         data_control: pd.DataFrame,
         data_treatment: pd.DataFrame,
+        globl_config: Type[GlobalConfig] = GlobalConfig,
     ):
         self.tests = tests
         self.data_control = data_control
         self.data_treatment = data_treatment
+        self.global_config = globl_config
+
+        if not isinstance(self.data_control, pd.DataFrame):
+            raise TypeError("`data_control` should be a pandas DataFrame")
+        if not isinstance(self.data_treatment, pd.DataFrame):
+            raise TypeError("`data_treatment` should be a pandas DataFrame")
 
         if len(self.data_treatment) < 1000 or len(self.data_control) < 1000:
             warnings.warn(f"data_control: {self.data_control.shape}")
@@ -38,19 +45,28 @@ class TableDrift(ABC):
         if (self.data_treatment.isna().sum().sum()) != 0:
             raise ValueError("Please replace NaN first in data_treatment")
 
-    def run_statistics(self, column_mapping: ConfigMap, features: list[str] = None, alpha: float = 0.05, show: bool = False):
-        assert alpha > 0 and alpha < 1, "Alpha (p-value) should be in [0;1] range"
-        assert isinstance(features, (list, type(None))), "Features should be a python list with string values"
+    def run_statistics(
+        self,
+        data_config: DataConfig,
+        features: list[str] = None,
+        alpha: float = 0.05,
+        show: bool = False,
+    ):
+        if not (0 < alpha < 1):
+            raise ValueError("`alpha` (p-value threshold) should be in the (0, 1) range")
+
+        if not isinstance(features, (list, type(None))):
+            raise TypeError("`features` should be a Python list of string values or None")
 
         self.__check_nan()
 
         result_numerical = pd.DataFrame()
         if not features:
-            features = column_mapping.numerical
+            features = data_config.numerical
 
         for test_name in self.tests:
             for column in features:
-                if column in column_mapping.numerical:
+                if column in data_config.numerical:
                     statistics_result = test_name(
                         data_1=self.data_control[column],
                         data_2=self.data_treatment[column],
