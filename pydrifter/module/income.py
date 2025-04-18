@@ -9,7 +9,7 @@ from ..auxiliaries import *
 warnings.showwarning = custom_warning
 
 
-class Suite(ABC):
+class TableDrift(ABC):
 
     def __init__(
         self,
@@ -21,19 +21,28 @@ class Suite(ABC):
         self.data_control = data_control
         self.data_treatment = data_treatment
 
-        if (data_control.isna().sum().sum()) != 0:
-            raise ValueError("Please replace NaN first in data_control")
-        if (data_treatment.isna().sum().sum()) != 0:
-            raise ValueError("Please replace NaN first in data_treatment")
-
         if len(self.data_treatment) < 1000 or len(self.data_control) < 1000:
             warnings.warn(f"data_control: {self.data_control.shape}")
             warnings.warn(f"data_treatment: {self.data_treatment.shape}")
             warnings.warn("Be careful with small amount of data. Some statistics may show incorrect results")
 
-    def run(self, column_mapping: ConfigMap, features: list[str] = None, alpha: float = 0.05):
+    def __clean_data(self):
+        pass
+
+    def run_data_health(self):
+        pass
+
+    def __check_nan(self):
+        if (self.data_control.isna().sum().sum()) != 0:
+            raise ValueError("Please replace NaN first in data_control")
+        if (self.data_treatment.isna().sum().sum()) != 0:
+            raise ValueError("Please replace NaN first in data_treatment")
+
+    def run_statistics(self, column_mapping: ConfigMap, features: list[str] = None, alpha: float = 0.05, show: bool = False):
         assert alpha > 0 and alpha < 1, "Alpha (p-value) should be in [0;1] range"
         assert isinstance(features, (list, type(None))), "Features should be a python list with string values"
+
+        self.__check_nan()
 
         result_numerical = pd.DataFrame()
 
@@ -68,8 +77,13 @@ class Suite(ABC):
                         "p_value",
                     ]].round(4)
 
-        return tabulate(
-            result_numerical.sort_values("conclusion", ascending=False).reset_index(drop=True),
-            headers=result_numerical.columns,
-            tablefmt="pretty",
-        )
+        result = result_numerical.sort_values("conclusion", ascending=True).reset_index(drop=True)
+
+        if show:
+            return tabulate(
+                result,
+                headers=result_numerical.columns,
+                tablefmt="pretty",
+            )
+        else:
+            return result
