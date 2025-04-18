@@ -4,7 +4,9 @@ from ..preprocessing import ConfigMap
 from ..statistics import calculate_statistics, TTest
 from typing import Callable
 from tabulate import tabulate
-import warnings
+from ..auxiliaries import *
+
+warnings.showwarning = custom_warning
 
 
 class Suite(ABC):
@@ -29,43 +31,26 @@ class Suite(ABC):
             warnings.warn(f"data_treatment: {self.data_treatment.shape}")
             warnings.warn("Be careful with small amount of data. Some statistics may show incorrect results")
 
-    def run(self, column_mapping: ConfigMap, features: list[str] = None):
+    def run(self, column_mapping: ConfigMap, features: list[str] = None, alpha: float = 0.05):
+        assert alpha > 0 and alpha < 1, "Alpha (p-value) should be in [0;1] range"
+        assert isinstance(features, (list, type(None))), "Features should be a python list with string values"
+
         result_numerical = pd.DataFrame()
 
         if not features:
             features = column_mapping.numerical
         for test_name in self.tests:
-            # print(test_name.__name__())
             for column in features:
                 if column in column_mapping.numerical:
-                    data_control_statistics = calculate_statistics(self.data_control[column])
-                    data_treatment_statistics = calculate_statistics(self.data_treatment[column])
-
-                    # p_value = test(data_1=self.data_control[column], data_2=self.data_treatment[column])
-                    criterion = test_name(
+                    statistics_result = test_name(
                         data_1=self.data_control[column],
                         data_2=self.data_treatment[column],
-                    )
-                    p_value = criterion.run()
-
-                    result_status = 'OK' if p_value >= 0.05 else "FAILED"
-
-                    temp = pd.DataFrame(
-                        data={
-                            "feature_name": [column],
-                            "control_mean": [data_control_statistics["mean"]],
-                            "treatment_mean": [data_treatment_statistics["mean"]],
-                            "control_std": [data_control_statistics["std"]],
-                            "treatment_std": [data_treatment_statistics["std"]],
-                            "stat_test": [criterion.__name__],
-                            "p_value": [p_value],
-                            "conclusion": [result_status],
-                        }
-                    )
+                        feature_name=column,
+                    ).run()
                     result_numerical = pd.concat(
-                        (result_numerical, temp), axis=0, ignore_index=True
+                        (result_numerical, statistics_result), axis=0, ignore_index=True
                     )
 
         return tabulate(
-            result_numerical, headers=result_numerical.columns, tablefmt="fancy_grid"
+            result_numerical.astype(str), headers=result_numerical.columns, tablefmt="pretty"
         )
