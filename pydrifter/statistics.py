@@ -185,7 +185,6 @@ class KLDivergence(ABC):
         return f"KL Divergence"
 
     def run(self):
-        # print(f"KL border valeu for conclusion: {self.border_value}")
         data_min = min(self.data_1.min(), self.data_2.min())
         data_max = max(self.data_1.max(), self.data_2.max())
         bins = np.linspace(data_min, data_max, self.bins)

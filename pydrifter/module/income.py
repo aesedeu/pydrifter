@@ -5,11 +5,13 @@ from ..statistics import calculate_statistics, TTest
 from typing import Callable, Type
 from tabulate import tabulate
 from ..auxiliaries import *
+from ..logger import create_logger
 
 warnings.showwarning = custom_warning
+logger = create_logger(name="income.py", level="info")
 
 
-class IncomeTableDrift(ABC):
+class TableDriftChecker(ABC):
 
     def __init__(
         self,
@@ -32,9 +34,6 @@ class IncomeTableDrift(ABC):
             warnings.warn(f"data_control: {self.data_control.shape}")
             warnings.warn(f"data_treatment: {self.data_treatment.shape}")
             warnings.warn("Be careful with small amount of data. Some statistics may show incorrect results")
-
-    def __clean_data(self):
-        pass
 
     def run_data_health(self, remove_nan: bool = False, fill_nan: bool = False):
         """
@@ -60,15 +59,15 @@ class IncomeTableDrift(ABC):
         missing_with_values = missing_counts[missing_counts > 0]
 
         if missing_with_values.empty:
-            print("✅ Данные в порядке: пропусков нет.")
+            logger.info("✅ Данные в порядке: пропусков нет.")
             return True
         else:
-            print("⚠️ Найдены пропуски в данных:")
-            print(missing_with_values.to_dict())
+            logger.info("⚠️ Найдены пропуски в данных:")
+            logger.info(missing_with_values.to_dict())
 
             if remove_nan:
                 self.data_treatment = self.data_treatment.dropna()
-                print("🗑️ Строки с пропусками удалены.")
+                logger.info("🗑️ Строки с пропусками удалены.")
 
             elif fill_nan:
                 for column in self.data_treatment.columns:
@@ -80,7 +79,7 @@ class IncomeTableDrift(ABC):
                         self.data_treatment.loc[:, column] = self.data_treatment[
                             column
                         ].fillna(fill_value)
-                print("🧯 Пропуски заполнены значениями из контрольного набора.")
+                logger.info("🧯 Пропуски заполнены значениями из контрольного набора.")
             else:
                 return False
 
@@ -138,7 +137,7 @@ class IncomeTableDrift(ABC):
                         "p_value",
                     ]].round(4)
 
-                    print(f"{test_name.__name__} for '{column}'".ljust(50, ".") + "SUCCEED")
+                    logger.info(f"{test_name.__name__} for '{column}'".ljust(50, ".") + "SUCCEED")
 
         result = result_numerical.sort_values("conclusion", ascending=True).reset_index(drop=True)
 

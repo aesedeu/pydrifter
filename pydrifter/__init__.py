@@ -1,2 +1,2 @@
-from .module.income import IncomeTableDrift
+from .module.income import TableDriftChecker
 from .preprocessing import GlobalConfig
