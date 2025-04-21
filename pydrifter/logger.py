@@ -58,7 +58,7 @@ def create_logger(name: str, level: str):
 
     log = logging.getLogger(name)
     log.addHandler(console_handler)
-    log.addHandler(file_handler)
+    # log.addHandler(file_handler)
 
     log.setLevel(logs[level])
 
