@@ -3,3 +3,4 @@ dist
 **/*.csv
 **/*.ipynb
 **/__pycache__
+**/.DS_Store

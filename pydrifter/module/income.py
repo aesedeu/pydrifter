@@ -36,8 +36,53 @@ class IncomeTableDrift(ABC):
     def __clean_data(self):
         pass
 
-    def run_data_health(self, clean: bool = True):
-        pass
+    def run_data_health(self, remove_nan: bool = False, fill_nan: bool = False):
+        """
+        Check for missing values in the dataset and handle them based on specified flags.
+
+        Parameters
+        ----------
+        remove_nan : bool, optional
+            If True, rows with missing values will be removed from `self.data_treatment`.
+        fill_nan : bool, optional
+            If True, missing values will be filled using the corresponding column values from `self.data_control`.
+            Numerical columns will be filled with the mean, categorical columns with the mode.
+
+        Raises
+        ------
+        ValueError
+            If both `remove_nan` and `fill_nan` are set to True.
+        """
+        if remove_nan and fill_nan:
+            raise ValueError("Only one of 'remove_nan' or 'fill_nan' can be True at a time.")
+
+        missing_counts = self.data_treatment.isna().sum()
+        missing_with_values = missing_counts[missing_counts > 0]
+
+        if missing_with_values.empty:
+            print("✅ Данные в порядке: пропусков нет.")
+            return True
+        else:
+            print("⚠️ Найдены пропуски в данных:")
+            print(missing_with_values.to_dict())
+
+            if remove_nan:
+                self.data_treatment = self.data_treatment.dropna()
+                print("🗑️ Строки с пропусками удалены.")
+
+            elif fill_nan:
+                for column in self.data_treatment.columns:
+                    if self.data_treatment[column].isna().sum() > 0:
+                        if self.data_treatment[column].dtype in ['float64', 'int64']:
+                            fill_value = self.data_control[column].mean()
+                        else:
+                            fill_value = self.data_control[column].mode().iloc[0]
+                        self.data_treatment.loc[:, column] = self.data_treatment[
+                            column
+                        ].fillna(fill_value)
+                print("🧯 Пропуски заполнены значениями из контрольного набора.")
+            else:
+                return False
 
     def __check_nan(self):
         if (self.data_control.isna().sum().sum()) != 0:
@@ -50,7 +95,7 @@ class IncomeTableDrift(ABC):
         data_config: DataConfig,
         features: list[str] = None,
         alpha: float = 0.05,
-        show: bool = False,
+        show_result: bool = False,
     ):
         if not (0 < alpha < 1):
             raise ValueError("`alpha` (p-value threshold) should be in the (0, 1) range")
@@ -97,7 +142,7 @@ class IncomeTableDrift(ABC):
 
         result = result_numerical.sort_values("conclusion", ascending=True).reset_index(drop=True)
 
-        if show:
+        if show_result:
             return tabulate(
                 result,
                 headers=result_numerical.columns,
