@@ -5,7 +5,10 @@ from abc import ABC, abstractmethod
 
 @dataclasses.dataclass
 class StatTestResult:
-    statistics_result: pd.DataFrame
+    dataframe: pd.DataFrame
+    value: float
+    conclusion: str = None
+
 
 class BaseStatisticalTest(ABC):
     control_data: np.ndarray
@@ -13,6 +16,7 @@ class BaseStatisticalTest(ABC):
     feature_name: str
     alpha: float
     feature_name: str = "UNKNOWN_FEATURE"
+    q: bool | float = False
 
     @property
     @abstractmethod

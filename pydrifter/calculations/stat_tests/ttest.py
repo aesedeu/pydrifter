@@ -4,9 +4,11 @@ import pandas as pd
 from scipy.stats import ttest_ind
 import pendulum
 
+from pydrifter.logger import create_logger
 from pydrifter.calculations.stat import mean_bootstrap, calculate_statistics
 from pydrifter.base_classes.base_statistics import StatTestResult, BaseStatisticalTest
 
+logger = create_logger(name="ttest.py", level="info")
 
 @dataclasses.dataclass
 class TTest(BaseStatisticalTest):
@@ -15,6 +17,7 @@ class TTest(BaseStatisticalTest):
     var: bool = False
     alpha: float = 0.05
     feature_name: str = "UNKNOWN_FEATURE"
+    q: bool | float = False
 
     @property
     def __name__(self):
@@ -29,7 +32,15 @@ class TTest(BaseStatisticalTest):
             mean_bootstrap(self.treatment_data),
             equal_var=self.var,
         )
-        result_status = "OK" if p_value >= self.alpha else "FAILED"
+
+        if p_value >= self.alpha:
+            result_status = "OK"
+            logger.info(
+                f"{self.__name__} for '{self.feature_name}'".ljust(50, ".") + " ✅ OK"
+            )
+        else:
+            result_status = "FAILED"
+            logger.info(f"{self.__name__} for '{self.feature_name}'".ljust(50, ".") + " ⚠️ FAILED")
 
         control_data_statistics = calculate_statistics(self.control_data)
         treatment_data_statistics = calculate_statistics(self.treatment_data)
@@ -49,4 +60,4 @@ class TTest(BaseStatisticalTest):
                 "conclusion": [result_status],
             }
         )
-        return StatTestResult(statistics_result=statistics_result)
+        return StatTestResult(dataframe=statistics_result, value=p_value)

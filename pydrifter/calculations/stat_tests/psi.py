@@ -3,14 +3,17 @@ import numpy as np
 import pandas as pd
 import pendulum
 
+from pydrifter.logger import create_logger
 from pydrifter.base_classes.base_statistics import StatTestResult, BaseStatisticalTest
 
+logger = create_logger(name="psi.py", level="info")
 
 @dataclasses.dataclass
 class PSI(BaseStatisticalTest):
     control_data: np.ndarray
     treatment_data: np.ndarray
     feature_name: str = "UNKNOWN_FEATURE"
+    q: bool | float = False
 
     @property
     def __name__(self):
@@ -18,8 +21,8 @@ class PSI(BaseStatisticalTest):
 
     def __call__(self, q: bool = True) -> StatTestResult:
         if q:
-            control_data_q99 = self.control_data[self.control_data < self.control_data.quantile(0.95)]
-            treatment_data_q99 = self.treatment_data[self.treatment_data < self.treatment_data.quantile(0.95)]
+            control_data_q99 = self.control_data[self.control_data < self.control_data.quantile(self.q)]
+            treatment_data_q99 = self.treatment_data[self.treatment_data < self.treatment_data.quantile(self.q)]
 
             bins = np.histogram_bin_edges(pd.concat([control_data_q99, treatment_data_q99], axis=0).values, bins="doane")
             reference_percents = np.histogram(control_data_q99, bins)[0] / len(control_data_q99)
@@ -53,8 +56,10 @@ class PSI(BaseStatisticalTest):
 
         if psi_value < 0.1:
             conclusion = "OK"
+            logger.info(f"{self.__name__} for '{self.feature_name}'".ljust(50, ".") + " ✅ OK")
         else:
             conclusion = "FAILED"
+            logger.info(f"{self.__name__} for '{self.feature_name}'".ljust(50, ".") + " ⚠️ FAILED")
 
         statistics_result = pd.DataFrame(
             {
@@ -72,4 +77,4 @@ class PSI(BaseStatisticalTest):
             }
         )
 
-        return StatTestResult(statistics_result=statistics_result)
+        return StatTestResult(dataframe=statistics_result, value=psi_value)

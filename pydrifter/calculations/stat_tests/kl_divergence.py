@@ -4,44 +4,64 @@ import pandas as pd
 from scipy.stats import entropy
 import pendulum
 
+from pydrifter.logger import create_logger
 from pydrifter.calculations.stat import calculate_statistics
 from pydrifter.base_classes.base_statistics import StatTestResult, BaseStatisticalTest
 
+logger = create_logger(name="kl_divergence.py", level="info")
 
 @dataclasses.dataclass
 class KLDivergence(BaseStatisticalTest):
     control_data: np.ndarray
     treatment_data: np.ndarray
     feature_name: str = "UNKNOWN_FEATURE"
-    bins: int = 50
     epsilon: float = 1e-8
     border_value: float = 0.1
+    q: bool | float = False
 
     @property
     def __name__(self):
         return f"KL Divergence"
 
-    def __call__(self) -> StatTestResult:
-        data_min = min(self.control_data.min(), self.treatment_data.min())
-        data_max = max(self.control_data.max(), self.treatment_data.max())
-        bins = np.linspace(data_min, data_max, self.bins)
+    def __call__(self, q: bool = True) -> StatTestResult:
+        if q:
+            control_data_q99 = self.control_data[self.control_data < self.control_data.quantile(self.q)]
+            treatment_data_q99 = self.treatment_data[self.treatment_data < self.treatment_data.quantile(self.q)]
 
-        p_hist, _ = np.histogram(self.control_data, bins=bins, density=True)
-        q_hist, _ = np.histogram(self.treatment_data, bins=bins, density=True)
+            bins = np.histogram_bin_edges(pd.concat([control_data_q99, treatment_data_q99], axis=0).values, bins="doane")
+            reference_percents = np.histogram(control_data_q99, bins)[0] / len(control_data_q99)
+            current_percents = np.histogram(treatment_data_q99, bins)[0] / len(treatment_data_q99)
+        else:
+            bins = np.histogram_bin_edges(
+                pd.concat([self.control_data, self.treatment_data], axis=0).values, bins="doane"
+            )
+            reference_percents = np.histogram(self.control_data, bins)[0] / len(self.control_data)
+            current_percents = np.histogram(self.treatment_data, bins)[0] / len(self.treatment_data)
 
-        p_hist += self.epsilon
-        q_hist += self.epsilon
+        np.place(
+            reference_percents,
+            reference_percents == 0,
+            min(reference_percents[reference_percents != 0]) / 10**6
+            if min(reference_percents[reference_percents != 0]) <= 0.0001
+            else 0.0001,
+        )
 
-        p_hist /= p_hist.sum()
-        q_hist /= q_hist.sum()
+        np.place(
+            current_percents,
+            current_percents == 0,
+            min(current_percents[current_percents != 0]) / 10**6
+            if min(current_percents[current_percents != 0]) <= 0.0001
+            else 0.0001,
+        )
 
-        kl_divergence = entropy(p_hist, q_hist)
-        # kl_divergence = kl_div(self.control_data, self.treatment_data)
+        kl_divergence = entropy(reference_percents, current_percents)
 
         if kl_divergence < self.border_value:
             conclusion = "OK"
+            logger.info(f"{self.__name__} for '{self.feature_name}'".ljust(50, ".") + " ✅ OK")
         else:
             conclusion = "FAILED"
+            logger.info(f"{self.__name__} for '{self.feature_name}'".ljust(50, ".") + " ⚠️ FAILED")
 
         control_data_statistics = calculate_statistics(self.control_data)
         treatment_data_statistics = calculate_statistics(self.treatment_data)
@@ -61,4 +81,6 @@ class KLDivergence(BaseStatisticalTest):
                 "conclusion": [conclusion],
             }
         )
-        return StatTestResult(statistics_result=statistics_result)
+        return StatTestResult(
+            dataframe=statistics_result, value=kl_divergence
+        )
