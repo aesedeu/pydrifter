@@ -1,6 +1,7 @@
 .venv
 dist
 **/*.csv
+**/*.parquet
 **/*.ipynb
 **/__pycache__
 **/.DS_Store

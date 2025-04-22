@@ -1,11 +1,14 @@
 from abc import ABC
 import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
 from ..preprocessing import DataConfig, GlobalConfig
-from ..statistics import calculate_statistics, TTest
 from typing import Callable, Type
 from tabulate import tabulate
 from ..auxiliaries import *
 from ..logger import create_logger
+
+from pydrifter.base_classes.base_statistics import BaseStatisticalTest
 
 warnings.showwarning = custom_warning
 logger = create_logger(name="income.py", level="info")
@@ -46,10 +49,11 @@ class TableDriftChecker(ABC):
         data_config: DataConfig,
         globl_config: Type[GlobalConfig] = GlobalConfig,
     ):
-        self.data_control = data_control
-        self.data_treatment = data_treatment
+        self.data_control = data_control[data_config.numerical + data_config.categorical]
+        self.data_treatment = data_treatment[data_config.numerical + data_config.categorical]
         self.data_config = data_config
         self.global_config = globl_config
+        self._results = None
 
         if not isinstance(self.data_control, pd.DataFrame):
             raise TypeError("`data_control` should be a pandas DataFrame")
@@ -63,7 +67,7 @@ class TableDriftChecker(ABC):
 
         self.run_data_health()
 
-    def run_data_health(self, clean_data: bool = False):
+    def run_data_health(self, clean_data: bool = False) -> None:
         """
         Perform a health check on treatment and control datasets, validating their structure,
         data types, and presence of missing values. Optionally handles missing values based
@@ -146,7 +150,7 @@ class TableDriftChecker(ABC):
                         ].fillna(fill_value)
                 logger.info("🧯 Пропуски заполнены значениями из контрольного набора.")
 
-    def __check_nan(self):
+    def __check_nan(self) -> None:
         """
         Validate that both control and treatment datasets contain no missing values.
 
@@ -162,10 +166,10 @@ class TableDriftChecker(ABC):
 
     def run_statistics(
         self,
-        tests: list[Callable],
+        tests: list[Type[BaseStatisticalTest]],
         features: list[str] = None,
         show_result: bool = False,
-    ):
+    ) -> str | pd.DataFrame:
         """
         Run statistical tests on specified numerical features to compare control and treatment datasets.
 
@@ -208,12 +212,14 @@ class TableDriftChecker(ABC):
             for column in features:
                 if column in self.data_config.numerical:
                     statistics_result = test_name(
-                        data_1=self.data_control[column],
-                        data_2=self.data_treatment[column],
+                        control_data=self.data_control[column],
+                        treatment_data=self.data_treatment[column],
                         feature_name=column,
-                    ).run()
+                    )()
                     result_numerical = pd.concat(
-                        (result_numerical, statistics_result), axis=0, ignore_index=True
+                        (result_numerical, statistics_result.statistics_result),
+                        axis=0,
+                        ignore_index=True,
                     )
                     result_numerical[
                         [
@@ -237,6 +243,8 @@ class TableDriftChecker(ABC):
 
         result = result_numerical.sort_values("conclusion", ascending=True).reset_index(drop=True)
 
+        self._results = result
+
         if show_result:
             return tabulate(
                 result,
@@ -245,3 +253,59 @@ class TableDriftChecker(ABC):
             )
         else:
             return result
+
+    def draw(self, feature_name, quantiles: list | None = None) -> None:
+
+        if quantiles:
+            if not isinstance(quantiles, list):
+                raise TypeError("'quantiles' should be list or None")
+            if quantiles[0] >= quantiles[1]:
+                raise ValueError("Higher quantile should be higher than lower")
+            if quantiles[0] < 0 or quantiles[1] > 1:
+                raise ValueError("Quantiles should be in range [0;1]")
+
+        if quantiles:
+            control = self.data_control[
+                (
+                    self.data_control[feature_name]
+                    > self.data_control[feature_name].quantile(quantiles[0])
+                )
+                & (
+                    self.data_control[feature_name]
+                    < self.data_control[feature_name].quantile(quantiles[1])
+                )
+            ][feature_name]
+            sns.kdeplot(control, color="dodgerblue", label=f"Control (avg={control.mean():.2f})")
+
+            test = self.data_treatment[
+                (
+                    self.data_treatment[feature_name]
+                    > self.data_treatment[feature_name].quantile(quantiles[0])
+                )
+                & (
+                    self.data_treatment[feature_name]
+                    < self.data_treatment[feature_name].quantile(quantiles[1])
+                )
+            ][feature_name]
+            sns.kdeplot(test, color="orange", label=f"Test (avg={test.mean():.2f})")
+        else:
+            sns.kdeplot(
+                self.data_control[feature_name],
+                color="dodgerblue",
+                label=f"Control (avg={self.data_control[feature_name].mean():.2f})",
+            )
+            sns.kdeplot(
+                self.data_treatment[feature_name],
+                color="orange",
+                label=f"Test (avg={self.data_treatment[feature_name].mean():.2f})",
+            )
+
+        plt.title(f"'{feature_name}' distribution")
+        plt.legend()
+        plt.show()
+
+    def results(self):
+        if self._results is not None:
+            return self._results
+        else:
+            return "Not runned yet"
