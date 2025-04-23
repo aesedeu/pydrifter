@@ -13,9 +13,8 @@ class StatTestResult:
 class BaseStatisticalTest(ABC):
     control_data: np.ndarray
     treatment_data: np.ndarray
-    feature_name: str
-    alpha: float
     feature_name: str = "UNKNOWN_FEATURE"
+    alpha: float = 0.1
     q: bool | float = False
 
     @property

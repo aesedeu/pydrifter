@@ -1,4 +1,5 @@
 from abc import ABC
+import dataclasses
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -14,51 +15,23 @@ warnings.showwarning = custom_warning
 logger = create_logger(name="income.py", level="info")
 
 
+@dataclasses.dataclass
 class TableDriftChecker(ABC):
-    """
-    Abstract base class for performing drift checks between control and treatment datasets.
+    data_control: pd.DataFrame
+    data_treatment: pd.DataFrame
+    data_config: DataConfig
+    globl_config: Type[GlobalConfig] = GlobalConfig
+    _results = None
 
-    This class validates the structural consistency between datasets, including:
-    - Ensuring both are pandas DataFrames.
-    - Verifying the number of columns, column names, and data types match.
-    - Optionally performing a missing values health check upon initialization.
-
-    Parameters
-    ----------
-    data_control : pd.DataFrame
-        The baseline (control group) dataset.
-    data_treatment : pd.DataFrame
-        The dataset to be compared against the control (treatment group).
-    data_config : DataConfig
-        Configuration object containing feature metadata and missing value handling strategy.
-    globl_config : Type[GlobalConfig], optional
-        Global configuration class for setting common parameters and options. Defaults to `GlobalConfig`.
-
-    Raises
-    ------
-    TypeError
-        If either `data_control` or `data_treatment` is not a pandas DataFrame.
-    UserWarning
-        If either dataset contains fewer than 1000 observations.
-    """
-
-    def __init__(
-        self,
-        data_control: pd.DataFrame,
-        data_treatment: pd.DataFrame,
-        data_config: DataConfig,
-        globl_config: Type[GlobalConfig] = GlobalConfig,
-    ):
-        self.data_control = data_control[data_config.numerical + data_config.categorical]
-        self.data_treatment = data_treatment[data_config.numerical + data_config.categorical]
-        self.data_config = data_config
-        self.global_config = globl_config
-        self._results = None
-
+    def __post_init__(self):
         if not isinstance(self.data_control, pd.DataFrame):
             raise TypeError("`data_control` should be a pandas DataFrame")
         if not isinstance(self.data_treatment, pd.DataFrame):
             raise TypeError("`data_treatment` should be a pandas DataFrame")
+
+        selected_features = self.data_config.numerical + self.data_config.categorical
+        self.data_control = self.data_control[selected_features]
+        self.data_treatment = self.data_treatment[selected_features]
 
         if len(self.data_treatment) < 1000 or len(self.data_control) < 1000:
             warnings.warn(f"data_control: {self.data_control.shape}")
@@ -169,7 +142,6 @@ class TableDriftChecker(ABC):
         tests: list[Type[BaseStatisticalTest]],
         features: list[str] = None,
         show_result: bool = False,
-        # quantiles_cut: bool | float = False
     ) -> str | pd.DataFrame:
         """
         Run statistical tests on specified numerical features to compare control and treatment datasets.

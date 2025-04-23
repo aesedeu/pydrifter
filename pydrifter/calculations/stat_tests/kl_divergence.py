@@ -15,8 +15,7 @@ class KLDivergence(BaseStatisticalTest):
     control_data: np.ndarray
     treatment_data: np.ndarray
     feature_name: str = "UNKNOWN_FEATURE"
-    epsilon: float = 1e-8
-    border_value: float = 0.1
+    alpha: float = 0.1
     q: bool | float = False
 
     @property
@@ -56,7 +55,7 @@ class KLDivergence(BaseStatisticalTest):
 
         kl_divergence = entropy(reference_percents, current_percents)
 
-        if kl_divergence < self.border_value:
+        if kl_divergence < self.alpha:
             conclusion = "OK"
             logger.info(f"{self.__name__} for '{self.feature_name}'".ljust(50, ".") + " ✅ OK")
         else:

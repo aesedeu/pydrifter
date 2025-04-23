@@ -15,6 +15,7 @@ class Wasserstein(BaseStatisticalTest):
     control_data: np.ndarray
     treatment_data: np.ndarray
     feature_name: str = "UNKNOWN_FEATURE"
+    alpha: float = 0.1
     q: bool | float = False
 
     @property
@@ -47,7 +48,7 @@ class Wasserstein(BaseStatisticalTest):
             norm = max(control_data_statistics["std"], 0.001)
             wd_result_norm = wd_result / norm
 
-        if wd_result_norm < 0.1:
+        if wd_result_norm < self.alpha:
             conclusion = "OK"
             logger.info(f"{self.__name__} for '{self.feature_name}'".ljust(50, ".") + " ✅ OK")
         else:
@@ -69,7 +70,7 @@ class Wasserstein(BaseStatisticalTest):
                 "conclusion": [conclusion],
             }
         )
-            
+
         return StatTestResult(
             dataframe=statistics_result, value=wd_result_norm, conclusion=conclusion
         )
