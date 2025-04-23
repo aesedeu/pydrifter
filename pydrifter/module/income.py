@@ -39,8 +39,6 @@ class TableDrifter(ABC):
             warnings.warn(f"data_treatment: {self.data_treatment.shape}")
             warnings.warn("Be careful with small amount of data. Some statistics may show incorrect results")
 
-        self.run_data_health()
-
     def run_data_health(self, clean_data: bool = False) -> None:
         """
         Perform a health check on treatment and control datasets, validating their structure,
@@ -142,47 +140,41 @@ class TableDrifter(ABC):
     def run_statistics(
         self,
         tests: list[Type[BaseStatisticalTest]],
-        features: list[str] = None,
         show_result: bool = False,
     ) -> str | pd.DataFrame:
         """
-        Run statistical tests on specified numerical features to compare control and treatment datasets.
+        Run statistical tests on numerical and categorical features to compare control and treatment datasets.
 
         Parameters
         ----------
-        tests : list of Callable
-            A list of statistical test functions. Each function should accept arguments
-            `data_1`, `data_2`, and `feature_name`, and implement a `.run()` method
-            returning a pandas DataFrame with test results.
-        features : list of str, optional
-            List of numerical feature names to run the tests on.
-            If None, features from `self.data_config.numerical` will be used.
+        tests : list of Type[BaseStatisticalTest]
+            List of statistical test classes inheriting from `BaseStatisticalTest`.
+            Each test should implement the `__call__()` method returning `StatTestResult`.
+
         show_result : bool, optional, default=False
-            If True, displays the results in a pretty-printed table format using `tabulate`.
-            If False, returns the results as a pandas DataFrame.
+            If True, returns a formatted string table using `tabulate`.
+            If False, returns a pandas DataFrame with test results.
 
         Returns
         -------
-        Union[str, pd.DataFrame]
-            Tabulated string with test results if `show_result` is True, otherwise a pandas DataFrame
-            containing the statistical test results for each column.
+        str or pandas.DataFrame
+            Tabulated string of test results if `show_result` is True,
+            otherwise a DataFrame containing the results of the statistical tests.
 
         Raises
         ------
-        TypeError
-            If `features` is not a list of strings or None.
         ValueError
-            If missing values (NaN) are detected in either dataset before running the tests.
+            If missing values are found in the control or treatment datasets.
         """
-        if not isinstance(features, (list, type(None))):
-            raise TypeError("`features` should be a Python list of string values or None")
 
+        self.run_data_health()
         self.__check_nan()
 
         result_numerical = pd.DataFrame()
-        if not features:
-            features = self.data_config.numerical
 
+        features = self.data_config.numerical + self.data_config.categorical
+
+        # Numerical tests
         for test_name in tests:
             for column in features:
                 if column in self.data_config.numerical:
