@@ -23,30 +23,16 @@ class Wasserstein(BaseStatisticalTest):
         return f"Wasserstein distance"
 
     def __call__(self) -> StatTestResult:
-        # govnokod <3
-        if self.q:
-            control_data_q99 = self.control_data[
-                self.control_data < self.control_data.quantile(self.q)
-            ]
-            treatment_data_q99 = self.treatment_data[
-                self.treatment_data < self.treatment_data.quantile(self.q)
-            ]
+        control = self._apply_quantile_cut(self.control_data)
+        treatment = self._apply_quantile_cut(self.treatment_data)
 
-            control_data_statistics = calculate_statistics(control_data_q99)
-            treatment_data_statistics = calculate_statistics(treatment_data_q99)
+        control_data_statistics = calculate_statistics(control)
+        treatment_data_statistics = calculate_statistics(treatment)
 
-            wd_result = wasserstein_distance(control_data_q99, treatment_data_q99)
+        wd_result = wasserstein_distance(control, treatment)
 
-            norm = max(control_data_statistics["std"], 0.001)
-            wd_result_norm = wd_result / norm
-        else:
-            control_data_statistics = calculate_statistics(self.control_data)
-            treatment_data_statistics = calculate_statistics(self.treatment_data)
-
-            wd_result = wasserstein_distance(self.control_data, self.treatment_data)
-
-            norm = max(control_data_statistics["std"], 0.001)
-            wd_result_norm = wd_result / norm
+        norm = max(control_data_statistics["std"], 0.001)
+        wd_result_norm = wd_result / norm
 
         if wd_result_norm < self.alpha:
             conclusion = "OK"

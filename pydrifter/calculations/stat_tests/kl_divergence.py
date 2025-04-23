@@ -23,25 +23,17 @@ class KLDivergence(BaseStatisticalTest):
         return f"KL Divergence"
 
     def __call__(self) -> StatTestResult:
-        if self.q:
-            control_data_q99 = self.control_data[self.control_data < self.control_data.quantile(self.q)]
-            treatment_data_q99 = self.treatment_data[self.treatment_data < self.treatment_data.quantile(self.q)]
+        control = self._apply_quantile_cut(self.control_data)
+        treatment = self._apply_quantile_cut(self.treatment_data)
 
-            control_data_statistics = calculate_statistics(control_data_q99)
-            treatment_data_statistics = calculate_statistics(treatment_data_q99)
+        control_data_statistics = calculate_statistics(control)
+        treatment_data_statistics = calculate_statistics(treatment)
 
-            bins = np.histogram_bin_edges(pd.concat([control_data_q99, treatment_data_q99], axis=0).values, bins="doane")
-            reference_percents = np.histogram(control_data_q99, bins)[0] / len(control_data_q99)
-            current_percents = np.histogram(treatment_data_q99, bins)[0] / len(treatment_data_q99)
-        else:
-            control_data_statistics = calculate_statistics(self.control_data)
-            treatment_data_statistics = calculate_statistics(self.treatment_data)
-
-            bins = np.histogram_bin_edges(
-                pd.concat([self.control_data, self.treatment_data], axis=0).values, bins="doane"
-            )
-            reference_percents = np.histogram(self.control_data, bins)[0] / len(self.control_data)
-            current_percents = np.histogram(self.treatment_data, bins)[0] / len(self.treatment_data)
+        bins = np.histogram_bin_edges(
+            pd.concat([control, treatment], axis=0).values, bins="doane"
+        )
+        reference_percents = np.histogram(control, bins)[0] / len(control)
+        current_percents = np.histogram(treatment, bins)[0] / len(treatment)
 
         np.place(
             reference_percents,

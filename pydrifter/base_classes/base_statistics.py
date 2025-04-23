@@ -29,6 +29,12 @@ class BaseStatisticalTest(ABC):
         """Run statistical test and return result."""
         pass
 
+    def _apply_quantile_cut(self, data: pd.Series | np.ndarray) -> pd.Series:
+        """Apply quantile cut if self.q is set."""
+        if not isinstance(data, pd.Series):
+            data = pd.Series(data)
+        return data[data < data.quantile(self.q)] if self.q else data
+
     def dataframe_report(
         self,
         control_mean,

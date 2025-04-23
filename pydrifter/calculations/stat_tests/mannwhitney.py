@@ -23,10 +23,13 @@ class MannWhitney(BaseStatisticalTest):
         return f"Mann-Whitney test"
 
     def __call__(self) -> StatTestResult:
-        control_data_statistics = calculate_statistics(self.control_data)
-        treatment_data_statistics = calculate_statistics(self.treatment_data)
+        control = self._apply_quantile_cut(self.control_data)
+        treatment = self._apply_quantile_cut(self.treatment_data)
 
-        statistics, p_value = mannwhitneyu(self.control_data, self.treatment_data)
+        control_data_statistics = calculate_statistics(control)
+        treatment_data_statistics = calculate_statistics(treatment)
+
+        statistics, p_value = mannwhitneyu(control, treatment)
 
         if p_value >= self.alpha:
             conclusion = "OK"

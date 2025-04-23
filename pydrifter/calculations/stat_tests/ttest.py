@@ -27,9 +27,15 @@ class TTest(BaseStatisticalTest):
             return f"Welch's test (sample mean)"
 
     def __call__(self) -> StatTestResult:
+        control = self._apply_quantile_cut(self.control_data)
+        treatment = self._apply_quantile_cut(self.treatment_data)
+
+        control_data_statistics = calculate_statistics(control)
+        treatment_data_statistics = calculate_statistics(treatment)
+
         statistics, p_value = ttest_ind(
-            mean_bootstrap(self.control_data),
-            mean_bootstrap(self.treatment_data),
+            mean_bootstrap(control),
+            mean_bootstrap(treatment),
             equal_var=self.var,
         )
 
@@ -42,8 +48,8 @@ class TTest(BaseStatisticalTest):
             conclusion = "FAILED"
             logger.info(f"{self.__name__} for '{self.feature_name}'".ljust(50, ".") + " ⚠️ FAILED")
 
-        control_data_statistics = calculate_statistics(self.control_data)
-        treatment_data_statistics = calculate_statistics(self.treatment_data)
+        # control_data_statistics = calculate_statistics(self.control_data)
+        # treatment_data_statistics = calculate_statistics(self.treatment_data)
 
         statistics_result = self.dataframe_report(
             feature_name=self.feature_name,

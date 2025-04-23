@@ -27,6 +27,8 @@ class TableDrifter(ABC):
             raise TypeError("`data_control` should be a pandas DataFrame")
         if not isinstance(self.data_treatment, pd.DataFrame):
             raise TypeError("`data_treatment` should be a pandas DataFrame")
+        if self.data_control.shape[1] != self.data_treatment.shape[1]:
+            raise ValueError(f"Number of columns should be equal in control and treatment ({self.data_control.shape[1]} != {self.data_treatment.shape[1]})")
 
         selected_features = self.data_config.numerical + self.data_config.categorical
         self.data_control = self.data_control[selected_features]
@@ -100,6 +102,7 @@ class TableDrifter(ABC):
         missing_counts = self.data_treatment.isna().sum()
         missing_with_values = missing_counts[missing_counts > 0]
 
+        # Missing values
         if missing_with_values.empty:
             logger.info("Missing values:".ljust(50, ".") + " ✅ OK")
         else:
