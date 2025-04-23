@@ -46,7 +46,7 @@ pip install pydrifter
 import pandas as pd
 from pydrifter import TableDriftChecker
 from pydrifter.calculations import KS, Wasserstein, PSI
-from pydrifter.preprocessing import DataConfig
+from pydrifter.config import DataConfig
 
 # Define control and treatment datasets
 control_df = pd.read_csv("data/control.csv")
