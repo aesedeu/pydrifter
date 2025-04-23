@@ -2,6 +2,7 @@ import dataclasses
 import numpy as np
 import pandas as pd
 from scipy.stats import ks_2samp
+import matplotlib.pyplot as plt
 import pendulum
 
 from pydrifter.logger import create_logger
@@ -51,3 +52,48 @@ class KolmogorovSmirnov(BaseStatisticalTest):
             }
         )
         return StatTestResult(dataframe=statistics_result, value=p_value)
+
+    def _ecdf(self, data):
+        x = np.sort(data)
+        y = np.arange(1, len(data) + 1) / len(data)
+        return x, y
+
+    def draw(self):
+        statistics, p_value = ks_2samp(self.control_data, self.treatment_data)
+        # Получаем ECDF
+        x_x, x_y = self._ecdf(self.control_data)
+        y_x, y_y = self._ecdf(self.treatment_data)
+
+        # Объединяем все значения и считаем разницу ECDF на общей сетке
+        all_values = np.sort(np.concatenate([self.control_data, self.treatment_data]))
+        x_interp = np.searchsorted(x_x, all_values, side="right") / len(x_x)
+        y_interp = np.searchsorted(y_x, all_values, side="right") / len(y_x)
+        d = np.abs(x_interp - y_interp)
+        max_idx = np.argmax(d)
+
+        # Построение графика
+        plt.figure(figsize=(10, 6))
+        plt.step(x_x, x_y, label="control_data", color="dodgerblue", where="post")
+        plt.step(y_x, y_y, label="treatment_data", color="orange", where="post")
+
+        # Координаты точки максимального расстояния
+        ks_x = all_values[max_idx]
+        ecdf_x_val = x_interp[max_idx]
+        ecdf_y_val = y_interp[max_idx]
+
+        # Рисуем вертикальную линию KS-расстояния
+        plt.vlines(
+            ks_x,
+            ymin=min(ecdf_x_val, ecdf_y_val),
+            ymax=max(ecdf_x_val, ecdf_y_val),
+            color="red",
+            linestyle="--",
+            label=f"KS distance = {statistics:.3f}, p-value = {p_value:.3f}",
+        )
+
+        # Подписи
+        plt.title("ECDF KSTest")
+        plt.xlabel("Value")
+        plt.ylabel("Probability")
+        plt.legend()
+        plt.show()
