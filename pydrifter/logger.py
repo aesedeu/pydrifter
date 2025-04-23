@@ -4,13 +4,13 @@ import os
 import pendulum
 from termcolor import colored
 
-# Создание директории для логов, если ее нет
-if "logs" not in os.listdir():
-    os.mkdir("logs")
+# # Создание директории для логов, если ее нет
+# if "logs" not in os.listdir():
+#     os.mkdir("logs")
 
 
 class CustomConsoleLogger(logging.Formatter):
-    FMT = "[{levelname:^10}] - {asctime} - {name}: {message}"
+    FMT = "[{levelname:^10}] - {asctime}: {message}"
     FORMATS = {
         logging.DEBUG: colored(FMT, "light_grey"),
         logging.INFO: colored(FMT),
@@ -22,16 +22,16 @@ class CustomConsoleLogger(logging.Formatter):
     def format(self, record):
         # Формат для консоли с цветами
         log_fmt = self.FORMATS.get(record.levelno, self.FMT)
-        formatter = logging.Formatter(log_fmt, style="{")
+        formatter = logging.Formatter(log_fmt, style="{", datefmt="%H:%M:%S")
         return formatter.format(record)
 
 
 class CustomFileLogger(logging.Formatter):
-    FMT = "[{levelname:^10}] - {asctime} - {name}: {message}"
+    FMT = "[{levelname:^10}] - {asctime}: {message}"
 
     def format(self, record):
         # Формат для файла
-        formatter = logging.Formatter(self.FMT, style="{")
+        formatter = logging.Formatter(self.FMT, style="{", datefmt="%H:%M:%S")
         return formatter.format(record)
 
 
@@ -45,7 +45,10 @@ file_handler.setFormatter(CustomFileLogger())
 file_handler.setLevel(logging.INFO)  # Устанавливаем уровень логирования для файла
 
 
-def create_logger(name: str, level: str):
+def create_logger(
+    level: str,
+    name: str | None = None,
+):
     logs = {
         "debug": logging.DEBUG,
         "info": logging.INFO,
@@ -56,7 +59,7 @@ def create_logger(name: str, level: str):
 
     assert level in list(logs), "Неверный уровень логирования (debug/info/warning/error/critical)"
 
-    log = logging.getLogger(name)
+    log = logging.getLogger()
     log.addHandler(console_handler)
     # log.addHandler(file_handler)
 
