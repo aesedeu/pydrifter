@@ -22,20 +22,23 @@ class TTest(BaseStatisticalTest):
     @property
     def __name__(self):
         if self.var:
-            return f"Welch's test (sample mean)"
+            return f"Student test (bootstrap mean)"
         else:
-            return f"Welch's test (sample mean)"
+            return f"Welch's test (bootstrap mean)"
 
     def __call__(self) -> StatTestResult:
         control = self._apply_quantile_cut(self.control_data)
         treatment = self._apply_quantile_cut(self.treatment_data)
 
+        control = mean_bootstrap(control)
+        treatment = mean_bootstrap(treatment)
+
         control_data_statistics = calculate_statistics(control)
         treatment_data_statistics = calculate_statistics(treatment)
 
         statistics, p_value = ttest_ind(
-            mean_bootstrap(control),
-            mean_bootstrap(treatment),
+            control,
+            treatment,
             equal_var=self.var,
         )
 
@@ -48,9 +51,6 @@ class TTest(BaseStatisticalTest):
             conclusion = "FAILED"
             logger.info(f"{self.__name__} for '{self.feature_name}'".ljust(50, ".") + " ⚠️ FAILED")
 
-        # control_data_statistics = calculate_statistics(self.control_data)
-        # treatment_data_statistics = calculate_statistics(self.treatment_data)
-
         statistics_result = self.dataframe_report(
             feature_name=self.feature_name,
             feature_type="numerical",
@@ -59,6 +59,7 @@ class TTest(BaseStatisticalTest):
             control_std=control_data_statistics["std"],
             treatment_std=treatment_data_statistics["std"],
             quantile_cut=self.q if self.q else False,
+            p_value=p_value,
             test_name=self.__name__,
             statistics=statistics,
             conclusion=conclusion,
