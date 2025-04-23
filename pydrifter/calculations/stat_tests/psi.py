@@ -19,8 +19,8 @@ class PSI(BaseStatisticalTest):
     def __name__(self):
         return "Population Stability Index"
 
-    def __call__(self, q: bool = True) -> StatTestResult:
-        if q:
+    def __call__(self) -> StatTestResult:
+        if self.q:
             control_data_q99 = self.control_data[self.control_data < self.control_data.quantile(self.q)]
             treatment_data_q99 = self.treatment_data[self.treatment_data < self.treatment_data.quantile(self.q)]
 

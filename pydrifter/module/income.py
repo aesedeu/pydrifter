@@ -169,7 +169,7 @@ class TableDriftChecker(ABC):
         tests: list[Type[BaseStatisticalTest]],
         features: list[str] = None,
         show_result: bool = False,
-        quantiles_cut: bool | float = False
+        # quantiles_cut: bool | float = False
     ) -> str | pd.DataFrame:
         """
         Run statistical tests on specified numerical features to compare control and treatment datasets.
@@ -202,10 +202,6 @@ class TableDriftChecker(ABC):
         """
         if not isinstance(features, (list, type(None))):
             raise TypeError("`features` should be a Python list of string values or None")
-        if quantiles_cut > 1.0 or quantiles_cut < 0:
-            raise TypeError("`quantiles_cut` should be a in range [0;1]")
-        if not isinstance(quantiles_cut, (bool, float)):
-            raise TypeError("`quantiles_cut` should be bool or float type only")
 
         self.__check_nan()
 
@@ -220,7 +216,7 @@ class TableDriftChecker(ABC):
                         control_data=self.data_control[column],
                         treatment_data=self.data_treatment[column],
                         feature_name=column,
-                        q=quantiles_cut,
+                        q=self.data_config.quantiles_cut,
                     )()
                     result_numerical = pd.concat(
                         (result_numerical, statistics_result.dataframe),
@@ -244,8 +240,6 @@ class TableDriftChecker(ABC):
                         "statistics",
                         "p_value",
                     ]].round(4)
-
-                    # logger.info(f"{test_name.__name__} for '{column}'".ljust(50, ".") + "SUCCEED")
 
         result = result_numerical.sort_values("conclusion", ascending=True).reset_index(drop=True)
 

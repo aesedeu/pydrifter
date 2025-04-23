@@ -1,8 +1,10 @@
 from abc import ABC
+import dataclasses
 from tabulate import tabulate
 from typing import Union
 
 
+@dataclasses.dataclass
 class DataConfig(ABC):
     """
     Configuration class for dataset feature types and missing value strategy.
@@ -18,21 +20,22 @@ class DataConfig(ABC):
     target : str or None, optional
         Name of the target variable column, if present.
     """
+    categorical: list[str]
+    numerical: list[str]
+    nan_strategy: str = "fill"
+    target: Union[str, None] = None
+    quantiles_cut: bool | float = False
 
-    def __init__(
-        self,
-        categorical: list[str],
-        numerical: list[str],
-        nan_strategy: str = "fill",
-        target: Union[str, None] = None
-    ):
-        if nan_strategy not in ["fill", "remove"]:
-            raise TypeError(f"'nan_strategy' could be 'fill' or 'remove' only")
+    if nan_strategy not in ["fill", "remove"]:
+        raise TypeError(f"'nan_strategy' could be 'fill' or 'remove' only")
+        
+    if not isinstance(quantiles_cut, (bool, float)):
+        raise TypeError("`quantiles_cut` should be bool or float type only")
+    else:
+        if isinstance(quantiles_cut, float):
+            if quantiles_cut > 1.0 or quantiles_cut < 0:
+                raise TypeError("`quantiles_cut` should be a in range [0;1]")
 
-        self.target = target
-        self.categorical = categorical
-        self.numerical = numerical
-        self.nan_strategy = nan_strategy
 
     def __repr__(self) -> str:
         data = [
