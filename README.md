@@ -89,5 +89,5 @@ Soon
 ---
 
 ## 📄 License
-MIT License © 2025
+APACHE License © 2025
 Made with ❤️ by [Eugene C.]
