@@ -34,30 +34,29 @@ class TTest(BaseStatisticalTest):
         )
 
         if p_value >= self.alpha:
-            result_status = "OK"
+            conclusion = "OK"
             logger.info(
                 f"{self.__name__} for '{self.feature_name}'".ljust(50, ".") + " ✅ OK"
             )
         else:
-            result_status = "FAILED"
+            conclusion = "FAILED"
             logger.info(f"{self.__name__} for '{self.feature_name}'".ljust(50, ".") + " ⚠️ FAILED")
 
         control_data_statistics = calculate_statistics(self.control_data)
         treatment_data_statistics = calculate_statistics(self.treatment_data)
 
-        statistics_result = pd.DataFrame(
-            data={
-                "test_datetime": [pendulum.now().to_datetime_string()],
-                "feature_name": [self.feature_name],
-                "feature_type": ["numerical"],
-                "control_mean": [control_data_statistics["mean"]],
-                "treatment_mean": [treatment_data_statistics["mean"]],
-                "control_std": [control_data_statistics["std"]],
-                "treatment_std": [treatment_data_statistics["std"]],
-                "test_name": [self.__name__],
-                "p_value": [p_value],
-                "statistics": [statistics],
-                "conclusion": [result_status],
-            }
+        statistics_result = self.dataframe_report(
+            feature_name=self.feature_name,
+            feature_type="numerical",
+            control_mean=control_data_statistics["mean"],
+            treatment_mean=treatment_data_statistics["mean"],
+            control_std=control_data_statistics["std"],
+            treatment_std=treatment_data_statistics["std"],
+            quantile_cut=self.q if self.q else False,
+            test_name=self.__name__,
+            statistics=statistics,
+            conclusion=conclusion,
         )
-        return StatTestResult(dataframe=statistics_result, value=p_value)
+        return StatTestResult(
+            dataframe=statistics_result, value=p_value, conclusion=conclusion
+        )

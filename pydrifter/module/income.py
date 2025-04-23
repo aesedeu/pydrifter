@@ -3,7 +3,7 @@ import dataclasses
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
-from ..preprocessing import DataConfig, GlobalConfig
+from pydrifter.config.table_data import TableConfig
 from typing import Callable, Type
 from tabulate import tabulate
 from ..auxiliaries import *
@@ -16,11 +16,10 @@ logger = create_logger(name="income.py", level="info")
 
 
 @dataclasses.dataclass
-class TableDriftChecker(ABC):
+class TableDrifter(ABC):
     data_control: pd.DataFrame
     data_treatment: pd.DataFrame
-    data_config: DataConfig
-    globl_config: Type[GlobalConfig] = GlobalConfig
+    data_config: TableConfig
     _results = None
 
     def __post_init__(self):

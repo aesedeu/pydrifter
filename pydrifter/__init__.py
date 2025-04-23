@@ -1,2 +1,2 @@
-from pydrifter.module.income import TableDriftChecker
-from pydrifter.preprocessing import GlobalConfig
+from pydrifter.module.income import TableDrifter
+from pydrifter.config.table_data import GlobalConfig

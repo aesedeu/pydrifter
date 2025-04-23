@@ -4,6 +4,7 @@ import pandas as pd
 import pendulum
 
 from pydrifter.logger import create_logger
+from pydrifter.calculations.stat import calculate_statistics
 from pydrifter.base_classes.base_statistics import StatTestResult, BaseStatisticalTest
 
 logger = create_logger(name="psi.py", level="info")
@@ -24,10 +25,16 @@ class PSI(BaseStatisticalTest):
             control_data_q99 = self.control_data[self.control_data < self.control_data.quantile(self.q)]
             treatment_data_q99 = self.treatment_data[self.treatment_data < self.treatment_data.quantile(self.q)]
 
+            control_data_statistics = calculate_statistics(control_data_q99)
+            treatment_data_statistics = calculate_statistics(treatment_data_q99)
+
             bins = np.histogram_bin_edges(pd.concat([control_data_q99, treatment_data_q99], axis=0).values, bins="doane")
             reference_percents = np.histogram(control_data_q99, bins)[0] / len(control_data_q99)
             current_percents = np.histogram(treatment_data_q99, bins)[0] / len(treatment_data_q99)
         else:
+            control_data_statistics = calculate_statistics(self.control_data)
+            treatment_data_statistics = calculate_statistics(self.treatment_data)
+
             bins = np.histogram_bin_edges(
                 pd.concat([self.control_data, self.treatment_data], axis=0).values, bins="doane"
             )
@@ -61,20 +68,19 @@ class PSI(BaseStatisticalTest):
             conclusion = "FAILED"
             logger.info(f"{self.__name__} for '{self.feature_name}'".ljust(50, ".") + " ⚠️ FAILED")
 
-        statistics_result = pd.DataFrame(
-            {
-                "test_datetime": [pendulum.now().to_datetime_string()],
-                "feature_name": [self.feature_name],
-                "feature_type": ["numerical"],
-                "control_mean": [np.mean(self.control_data)],
-                "treatment_mean": [np.mean(self.treatment_data)],
-                "control_std": [np.std(self.control_data)],
-                "treatment_std": [np.std(self.treatment_data)],
-                "test_name": [self.__name__],
-                "p_value": ["-"],
-                "statistics": [psi_value],
-                "conclusion": [conclusion],
-            }
+        statistics_result = self.dataframe_report(
+            feature_name=self.feature_name,
+            feature_type="numerical",
+            control_mean=control_data_statistics["mean"],
+            treatment_mean=treatment_data_statistics["mean"],
+            control_std=control_data_statistics["std"],
+            treatment_std=treatment_data_statistics["std"],
+            quantile_cut=self.q if self.q else False,
+            test_name=self.__name__,
+            statistics=psi_value,
+            conclusion=conclusion,
         )
 
-        return StatTestResult(dataframe=statistics_result, value=psi_value)
+        return StatTestResult(
+            dataframe=statistics_result, value=psi_value, conclusion=conclusion
+        )

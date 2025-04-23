@@ -2,6 +2,7 @@ import dataclasses
 import numpy as np
 import pandas as pd
 from abc import ABC, abstractmethod
+import pendulum
 
 @dataclasses.dataclass
 class StatTestResult:
@@ -27,3 +28,36 @@ class BaseStatisticalTest(ABC):
     def __call__(self) -> StatTestResult:
         """Run statistical test and return result."""
         pass
+
+    def dataframe_report(
+        self,
+        control_mean,
+        treatment_mean,
+        control_std,
+        treatment_std,
+        test_name,
+        quantile_cut,
+        statistics,
+        conclusion,
+        feature_name: str = feature_name,
+        feature_type: str = "unknown",
+        p_value: str | float = "-",
+    ) -> pd.DataFrame:
+        statistics_result = pd.DataFrame(
+            data={
+                "test_datetime": [pendulum.now().to_datetime_string()],
+                "feature_name": [feature_name],
+                "feature_type": [feature_type],
+                "control_mean": [control_mean],
+                "treatment_mean": [treatment_mean],
+                "control_std": [control_std],
+                "treatment_std": [treatment_std],
+                "quantile_cut": [quantile_cut],
+                "test_name": [test_name],
+                "p_value": [p_value],
+                "statistics": [statistics],
+                "conclusion": [conclusion],
+            }
+        )
+
+        return statistics_result
