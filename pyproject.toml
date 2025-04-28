@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pydrifter"
-version = "0.1.4"
+version = "0.1.5"
 description = "Data drift checking for ML projects"
 authors = ["aesedeu <aesedeu@gmail.com>"]
 readme = "README.md"
