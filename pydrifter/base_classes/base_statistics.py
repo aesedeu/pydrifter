@@ -48,6 +48,8 @@ class BaseStatisticalTest(ABC):
         feature_name: str = feature_name,
         feature_type: str = "unknown",
         p_value: str | float = "-",
+        left_ci: float | str = "-",
+        right_ci: float | str = "-"
     ) -> pd.DataFrame:
         statistics_result = pd.DataFrame(
             data={
@@ -61,6 +63,8 @@ class BaseStatisticalTest(ABC):
                 "quantile_cut": [quantile_cut],
                 "test_name": [test_name],
                 "p_value": [p_value],
+                "left_ci": [left_ci],
+                "right_ci": [right_ci],
                 "statistics": [statistics],
                 "conclusion": [conclusion],
             }
