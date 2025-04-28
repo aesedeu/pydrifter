@@ -2,7 +2,7 @@
 name = "pydrifter"
 version = "0.1.5-1"
 description = "Data drift checking for ML projects"
-authors = ["aesedeu <https://github.com/aesedeu>"]
+authors = ["aesedeu <aesedeu@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
