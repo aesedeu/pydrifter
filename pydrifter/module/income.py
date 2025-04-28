@@ -20,7 +20,10 @@ class TableDrifter(ABC):
     data_control: pd.DataFrame
     data_treatment: pd.DataFrame
     data_config: TableConfig
-    _results = None
+    tests: list[Type[BaseStatisticalTest]]
+    _result = None
+    _summary = None
+    
 
     def __post_init__(self):
         if not isinstance(self.data_control, pd.DataFrame):
@@ -38,6 +41,14 @@ class TableDrifter(ABC):
             warnings.warn(f"data_control: {self.data_control.shape}")
             warnings.warn(f"data_treatment: {self.data_treatment.shape}")
             warnings.warn("Be careful with small amount of data. Some statistics may show incorrect results")
+
+    def __repr__(self) -> str:
+        data = [
+            ["data_control", self.data_control.shape],
+            ["data_treatment", self.data_treatment.shape],
+            ["tests", ", ".join([t.__name__ for t in self.tests])],
+        ]
+        return tabulate(data, headers=["Parameter", "Value"], tablefmt="fancy_grid")
 
     def run_data_health(self, clean_data: bool = False) -> None:
         """
@@ -139,7 +150,6 @@ class TableDrifter(ABC):
 
     def run_statistics(
         self,
-        tests: list[Type[BaseStatisticalTest]],
         show_result: bool = False,
     ) -> str | pd.DataFrame:
         """
@@ -175,7 +185,7 @@ class TableDrifter(ABC):
         features = self.data_config.numerical + self.data_config.categorical
 
         # Numerical tests
-        for test_name in tests:
+        for test_name in self.tests:
             for column in features:
                 if column in self.data_config.numerical:
                     statistics_result = test_name(
@@ -208,16 +218,18 @@ class TableDrifter(ABC):
                     ]].round(4)
 
         result = result_numerical.sort_values("conclusion", ascending=True).reset_index(drop=True)
+        summary = result.groupby("test_name").agg({"conclusion": "value_counts"})
 
-        self._results = result
+        self._result = result
+        self._summary = summary
 
         if show_result:
             print(tabulate(
-                result,
+                summary,
                 headers=result_numerical.columns,
                 tablefmt="pretty",
             ))
-        return result
+        return result, summary
 
     def draw(self, feature_name, quantiles: list[float] | None = None) -> None:
         if quantiles:
@@ -269,7 +281,7 @@ class TableDrifter(ABC):
         plt.show()
 
     def results(self):
-        if self._results is not None:
-            return self._results
+        if self._result is not None:
+            return self._result, self._summary
         else:
             return "Not runned yet"
