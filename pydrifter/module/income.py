@@ -23,9 +23,21 @@ class TableDrifter(ABC):
     tests: list[Type[BaseStatisticalTest]]
     _result = None
     _summary = None
-    
 
     def __post_init__(self):
+        """
+        Initialize internal structures and validate input dataframes.
+
+        Ensures that `data_control` and `data_treatment` are pandas DataFrames with matching columns
+        and selects only features specified in the `data_config`.
+
+        Raises
+        ------
+        TypeError
+            If `data_control` or `data_treatment` are not pandas DataFrames.
+        ValueError
+            If number of columns in control and treatment datasets differ.
+        """
         if not isinstance(self.data_control, pd.DataFrame):
             raise TypeError("`data_control` should be a pandas DataFrame")
         if not isinstance(self.data_treatment, pd.DataFrame):
@@ -43,6 +55,25 @@ class TableDrifter(ABC):
             warnings.warn("Be careful with small amount of data. Some statistics may show incorrect results")
 
     def __repr__(self) -> str:
+        """
+        Return a human-readable summary of the TableDrifter instance.
+
+        Returns
+        -------
+        str
+            A formatted table containing dataset shapes and selected tests.
+
+        Example
+        -------
+        >>> print(drifter)
+        ╒══════════════╤═══════════╕
+        │ Parameter    │ Value     │
+        ╞══════════════╪═══════════╡
+        │ data_control │ (1000, 5) │
+        │ data_treatment│ (1000, 5)│
+        │ tests        │ ttest, ks │
+        ╘══════════════╧═══════════╛
+        """
         data = [
             ["data_control", self.data_control.shape],
             ["data_treatment", self.data_treatment.shape],
@@ -52,31 +83,31 @@ class TableDrifter(ABC):
 
     def run_data_health(self, clean_data: bool = False) -> None:
         """
-        Perform a health check on treatment and control datasets, validating their structure,
-        data types, and presence of missing values. Optionally handles missing values based
-        on the configured strategy.
+        Validate and optionally clean the treatment dataset.
 
-        Checks performed:
-        - Number of columns in both datasets must match.
-        - Column names and their order must be identical.
-        - Data types of corresponding columns must be the same.
-        - Reports missing values in the treatment dataset.
+        Performs checks:
+        - Same number of columns in control and treatment.
+        - Same column names and order.
+        - Same data types.
+        - Reports missing values.
+
+        If `clean_data` is True, missing values are handled based on `data_config.nan_strategy`.
 
         Parameters
         ----------
-        clean_data : bool, optional
-            If True, missing values in the treatment dataset will be handled according to
-            `self.data_config.nan_strategy`:
-            - "remove": removes rows with missing values.
-            - "fill": fills missing values with the corresponding values from the control dataset
-              (numerical columns with the mean, categorical columns with the mode).
+        clean_data : bool, default=False
+            Whether to clean missing values automatically.
 
         Raises
         ------
         ValueError
-            If the number of columns or their names do not match between control and treatment datasets.
+            If datasets have different numbers of columns or different column names.
         TypeError
-            If data types in corresponding columns differ.
+            If corresponding columns have different data types.
+
+        Example
+        -------
+        >>> drifter.run_data_health(clean_data=True)
         """
 
         # Number of cols checkup
@@ -136,12 +167,16 @@ class TableDrifter(ABC):
 
     def __check_nan(self) -> None:
         """
-        Validate that both control and treatment datasets contain no missing values.
+        Check that there are no missing values in control or treatment datasets.
 
         Raises
         ------
         ValueError
-            If any missing (NaN) values are found in `data_control` or `data_treatment`.
+            If missing values are found.
+
+        Example
+        -------
+        >>> drifter._TableDrifter__check_nan()
         """
         if (self.data_control.isna().sum().sum()) != 0:
             raise ValueError("Please replace NaN first in data_control")
@@ -153,28 +188,28 @@ class TableDrifter(ABC):
         show_result: bool = False,
     ) -> str | pd.DataFrame:
         """
-        Run statistical tests on numerical and categorical features to compare control and treatment datasets.
+        Run statistical tests on control and treatment datasets.
+
+        Applies statistical tests for each numerical and categorical feature specified in `data_config`.
 
         Parameters
         ----------
-        tests : list of Type[BaseStatisticalTest]
-            List of statistical test classes inheriting from `BaseStatisticalTest`.
-            Each test should implement the `__call__()` method returning `StatTestResult`.
-
-        show_result : bool, optional, default=False
-            If True, returns a formatted string table using `tabulate`.
-            If False, returns a pandas DataFrame with test results.
+        show_result : bool, default=False
+            If True, prints the result as a formatted table. If False, returns DataFrames.
 
         Returns
         -------
-        str or pandas.DataFrame
-            Tabulated string of test results if `show_result` is True,
-            otherwise a DataFrame containing the results of the statistical tests.
+        tuple
+            (result: pd.DataFrame, summary: pd.DataFrame)
 
         Raises
         ------
         ValueError
-            If missing values are found in the control or treatment datasets.
+            If missing values are present in the datasets.
+
+        Example
+        -------
+        >>> result, summary = drifter.run_statistics()
         """
 
         self.run_data_health()
@@ -232,6 +267,30 @@ class TableDrifter(ABC):
         return result, summary
 
     def draw(self, feature_name, quantiles: list[float] | None = None) -> None:
+        """
+        Plot the distributions of a feature for control and treatment datasets.
+
+        Optionally limits the plot to a quantile range to remove outliers.
+
+        Parameters
+        ----------
+        feature_name : str
+            The feature to visualize.
+        quantiles : list of float, optional
+            Two values between 0 and 1 defining the lower and upper quantile boundaries.
+
+        Raises
+        ------
+        TypeError
+            If `quantiles` is not a list.
+        ValueError
+            If quantiles are not in [0,1] range or lower quantile is not smaller than higher.
+
+        Example
+        -------
+        >>> drifter.draw("age")
+        >>> drifter.draw("salary", quantiles=[0.05, 0.95])
+        """
         if quantiles:
             if not isinstance(quantiles, list):
                 raise TypeError("'quantiles' should be list or None")
@@ -281,6 +340,20 @@ class TableDrifter(ABC):
         plt.show()
 
     def results(self):
+        """
+        Get the results and summary of the last run of statistical tests.
+
+        Returns
+        -------
+        tuple or str
+            (result: pd.DataFrame, summary: pd.DataFrame) if tests were run,
+            otherwise the message "Not runned yet".
+
+        Example
+        -------
+        >>> result, summary = drifter.results()
+        >>> result.head()
+        """
         if self._result is not None:
             return self._result, self._summary
         else:

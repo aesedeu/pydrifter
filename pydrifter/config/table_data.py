@@ -8,7 +8,11 @@ import numpy as np
 @dataclasses.dataclass
 class TableConfig(ABC):
     """
-    Configuration class for dataset feature types and missing value strategy.
+    Configuration class for dataset feature types and missing value handling.
+
+    This class defines the feature types (numerical and categorical),
+    strategy for handling missing values, the target variable (optional),
+    and a parameter for quantile-based filtering.
 
     Parameters
     ----------
@@ -17,9 +21,29 @@ class TableConfig(ABC):
     numerical : List[str]
         List of numerical feature names.
     nan_strategy : str, optional
-        Strategy for handling missing values. Must be 'fill' or 'remove'. Default is 'fill'.
-    target : str or None, optional
-        Name of the target variable column, if present.
+        Strategy for handling missing values. Must be either 'fill' or 'remove'. Default is 'fill'.
+    target : str, optional
+        Target column name if available. Default is 'NOT DEFINED'.
+    quantiles_cut : bool or float, optional
+        Quantile threshold for filtering data when needed. If float, must be between 0 and 1. Default is False.
+
+    Raises
+    ------
+    TypeError
+        If `nan_strategy` is not 'fill' or 'remove'.
+    TypeError
+        If `quantiles_cut` is not of type bool or float, or if float not in [0, 1].
+
+    Examples
+    --------
+    >>> config = TableConfig(
+    ...     categorical=["gender", "city"],
+    ...     numerical=["age", "income"],
+    ...     nan_strategy="fill",
+    ...     target="purchase",
+    ...     quantiles_cut=0.99
+    ... )
+    >>> print(config)
     """
     categorical: list[str]
     numerical: list[str]

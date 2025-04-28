@@ -4,6 +4,7 @@
 <a href="https://pepy.tech/project/pydrifter" target="_blank"><img src="https://pepy.tech/badge/pydrifter" alt="PyPi Downloads"></a>
 <a href="https://github.com/aesedeu/pydrifter/blob/main/LICENSE" target="_blank"><img src="https://img.shields.io/badge/license-Apache%202.0-green?style=flat-square" alt="License"></a>
 <a href="https://pypi.org/project/pydrifter/" target="_blank"><img src="https://img.shields.io/pypi/v/pydrifter" alt="PyPi"></a>
+<a href="https://www.python.org/downloads/release/python-311/" target="_blank"><img src="https://img.shields.io/badge/python-3.11-blue.svg" alt="Python version"></a>
 
 **pydrifter** is a lightweight, extensible Python library for detecting data drift between control and treatment datasets using statistical tests.  
 It is designed for Data Scientists, ML Engineers, and Analysts working with production models and experiments (A/B tests, model monitoring, etc).
@@ -44,32 +45,33 @@ pip install pydrifter
 
 ```python
 import pandas as pd
-from pydrifter import TableDriftChecker
-from pydrifter.calculations import KS, Wasserstein, PSI
-from pydrifter.config import DataConfig
+from pydrifter.config import TableConfig
+from pydrifter.calculations import KLDivergence, PSI, Wasserstein
+from pydrifter import TableDrifter
 
-# Define control and treatment datasets
-control_df = pd.read_csv("data/control.csv")
-treatment_df = pd.read_csv("data/treatment.csv")
+data_control = pd.DataFrame({
+    'age': [25, 30, 35, 40, 45],
+    'salary': [50000, 60000, 70000, 80000, 90000],
+})
 
-# Configure features
-data_config = DataConfig(
-    numerical=["age", "salary", "click_rate"],
-    categorical=["device_type"]
+data_treatment = pd.DataFrame({
+    'age': [26, 31, 36, 41, 46],
+    'salary': [51000, 61000, 71000, 81000, 91000],
+})
+
+data_config = TableConfig(numerical=['age', 'salary'], categorical=[])
+
+drifter = TableDrifter(
+    data_control=data_control,
+    data_treatment=data_treatment,
+    data_config=data_config,
+    tests=[KLDivergence, PSI, Wasserstein]
+
 )
 
-# Initialize drift checker
-checker = TableDriftChecker(
-    data_control=control_df,
-    data_treatment=treatment_df,
-    data_config=data_config
-)
+result, summary = drifter.run_statistics(show_result=True)
 
-# Run statistical tests
-checker.run_statistics(
-    tests=[KS, Wasserstein, PSI],
-    show_result=True
-)
+drifter.draw("age", quantiles=[0.05, 0.95])
 ```
 
 ---
@@ -90,4 +92,4 @@ Soon
 
 ## 📄 License
 APACHE License © 2025
-Made with ❤️ by [Eugene C.]
+Made with ❤️ by Eugene C.
