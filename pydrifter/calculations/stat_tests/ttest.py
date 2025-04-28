@@ -74,8 +74,6 @@ class TTest(BaseStatisticalTest):
             p_value=p_value,
             test_name=self.__name__,
             statistics=statistics,
-            left_ci=left_ci,
-            right_ci=right_ci,
             conclusion=conclusion,
         )
         return StatTestResult(
