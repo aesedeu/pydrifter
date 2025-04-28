@@ -212,13 +212,12 @@ class TableDrifter(ABC):
         self._results = result
 
         if show_result:
-            return tabulate(
+            print(tabulate(
                 result,
                 headers=result_numerical.columns,
                 tablefmt="pretty",
-            )
-        else:
-            return result
+            ))
+        return result
 
     def draw(self, feature_name, quantiles: list | None = None) -> None:
 
