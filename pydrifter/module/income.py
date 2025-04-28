@@ -219,8 +219,7 @@ class TableDrifter(ABC):
             ))
         return result
 
-    def draw(self, feature_name, quantiles: list | None = None) -> None:
-
+    def draw(self, feature_name, quantiles: list[float] | None = None) -> None:
         if quantiles:
             if not isinstance(quantiles, list):
                 raise TypeError("'quantiles' should be list or None")
