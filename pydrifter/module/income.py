@@ -45,7 +45,7 @@ class TableDrifter(ABC):
             raise TypeError("`data_treatment` should be a pandas DataFrame")
         if self.data_control.shape[1] != self.data_treatment.shape[1]:
             raise ValueError(f"Number of columns should be equal in control and treatment ({self.data_control.shape[1]} != {self.data_treatment.shape[1]})")
-        
+
         for column in self.data_config.numerical:
             if not self.data_control[column].dtype in [float, int, np.float64, np.float32]:
                 raise TypeError(f"Wrong datatype '{self.data_control[column].dtype}' for numerical column '{column}'")
@@ -67,6 +67,8 @@ class TableDrifter(ABC):
             warnings.warn(f"data_control: {self.data_control.shape}")
             warnings.warn(f"data_treatment: {self.data_treatment.shape}")
             warnings.warn("Be careful with small amount of data. Some statistics may show incorrect results")
+
+        self.run_data_health()
 
     def __repr__(self) -> str:
         """
@@ -228,7 +230,7 @@ class TableDrifter(ABC):
         >>> result, summary = drifter.run_statistics()
         """
 
-        self.run_data_health()
+        # self.run_data_health()
         self.__check_nan()
 
         result_numerical = pd.DataFrame()
