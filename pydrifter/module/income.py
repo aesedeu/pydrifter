@@ -1,6 +1,7 @@
 from abc import ABC
 import dataclasses
 import pandas as pd
+import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 from pydrifter.config.table_data import TableConfig
@@ -44,12 +45,25 @@ class TableDrifter(ABC):
             raise TypeError("`data_treatment` should be a pandas DataFrame")
         if self.data_control.shape[1] != self.data_treatment.shape[1]:
             raise ValueError(f"Number of columns should be equal in control and treatment ({self.data_control.shape[1]} != {self.data_treatment.shape[1]})")
+        
+        for column in self.data_config.numerical:
+            if not self.data_control[column].dtype in [float, int, np.float64, np.float32]:
+                raise TypeError(f"Wrong datatype '{self.data_control[column].dtype}' for numerical column '{column}'")
+            if not self.data_treatment[column].dtype in [float, int, np.float64, np.float32]:
+                raise TypeError(f"Wrong datatype '{self.data_treatment[column].dtype}' for numerical column '{column}'")
 
-        selected_features = self.data_config.numerical + self.data_config.categorical
+        selected_features = self.data_config.numerical + self.data_config.categorical + self.data_config.datetime
         self.data_control = self.data_control[selected_features]
         self.data_treatment = self.data_treatment[selected_features]
 
-        if len(self.data_treatment) < 1000 or len(self.data_control) < 1000:
+        try:
+            for column in self.data_config.datetime:
+                self.data_control.loc[:, column] = pd.to_datetime(self.data_control.loc[:, column] )
+                self.data_treatment.loc[:, column] = pd.to_datetime(self.data_treatment.loc[:, column] )
+        except Exception as e:
+            raise ValueError(e)
+
+        if len(self.data_treatment) < 100 or len(self.data_control) < 100:
             warnings.warn(f"data_control: {self.data_control.shape}")
             warnings.warn(f"data_treatment: {self.data_treatment.shape}")
             warnings.warn("Be careful with small amount of data. Some statistics may show incorrect results")
@@ -66,13 +80,15 @@ class TableDrifter(ABC):
         Example
         -------
         >>> print(drifter)
-        ╒══════════════╤═══════════╕
-        │ Parameter    │ Value     │
-        ╞══════════════╪═══════════╡
-        │ data_control │ (1000, 5) │
-        │ data_treatment│ (1000, 5)│
-        │ tests        │ ttest, ks │
-        ╘══════════════╧═══════════╛
+        ╒════════════════╤═══════════════════════════════════════╕
+        │ Parameter      │ Value                                 │
+        ╞════════════════╪═══════════════════════════════════════╡
+        │ data_control   │ (1040822, 45)                         │
+        ├────────────────┼───────────────────────────────────────┤
+        │ data_treatment │ (2762, 45)                            │
+        ├────────────────┼───────────────────────────────────────┤
+        │ tests          │ TTest, PSI, Wasserstein, KLDivergence │
+        ╘════════════════╧═══════════════════════════════════════╛
         """
         data = [
             ["data_control", self.data_control.shape],

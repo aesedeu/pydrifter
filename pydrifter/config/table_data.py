@@ -47,6 +47,7 @@ class TableConfig(ABC):
     """
     categorical: list[str]
     numerical: list[str]
+    datetime: list[str]
     nan_strategy: str = "fill"
     target: Union[str] = "NOT DEFINED"
     quantiles_cut: bool | float = False
@@ -62,6 +63,33 @@ class TableConfig(ABC):
                 raise TypeError("`quantiles_cut` should be a in range [0;1]")
 
     def __repr__(self) -> str:
+        """
+        Return a human-readable summary of the TableConfig instance.
+
+        Returns
+        -------
+        str
+            A formatted table containing configuration data.
+
+        Example
+        -------
+        >>> print(drifter)
+        ╒══════════════════════╤════════════════════════════════════════════════╕
+        │ Parameter            │ Value                                          │
+        ╞══════════════════════╪════════════════════════════════════════════════╡
+        │ Target               │ NOT DEFINED                                    │
+        ├──────────────────────┼────────────────────────────────────────────────┤
+        │ Categorical Features │ WWW_REG_SHOP, SOURCE_REG                       │
+        ├──────────────────────┼────────────────────────────────────────────────┤
+        │ Numerical Features   │ ACTIVE_DAYS, TOTAL_SALE, WIN_COUNT, SALE_COUNT │
+        ├──────────────────────┼────────────────────────────────────────────────┤
+        │ Datetime Features    │ WWW_REG_START_DATE                             │
+        ├──────────────────────┼────────────────────────────────────────────────┤
+        │ NaN strategy         │ fill                                           │
+        ├──────────────────────┼────────────────────────────────────────────────┤
+        │ quantiles_cut        │ 0.99                                           │
+        ╘══════════════════════╧════════════════════════════════════════════════╛
+        """
         data = [
             ["Target", self.target],
             [
@@ -71,6 +99,10 @@ class TableConfig(ABC):
             [
                 "Numerical Features",
                 ", ".join(self.numerical) if self.numerical else "None",
+            ],
+            [
+                "Datetime Features",
+                ", ".join(self.datetime) if self.datetime else "None",
             ],
             ["NaN strategy", self.nan_strategy],
             ["quantiles_cut", self.quantiles_cut],
