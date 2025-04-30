@@ -1,10 +1,8 @@
 from abc import ABC
 import dataclasses
-from typing import Any
 import pandas as pd
 from PIL import Image
 import io
-from boto3.exceptions import S3UploadFailedError
 
 from pydrifter.logger import create_logger
 

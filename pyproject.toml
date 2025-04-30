@@ -21,6 +21,8 @@ boto3 = "^1.38.5"
 pyarrow = "^20.0.0"
 fastparquet = "^2024.11.0"
 openpyxl = "^3.1.5"
+psycopg2-binary = "^2.9.10"
+sqlalchemy = "^2.0.40"
 
 
 [build-system]
