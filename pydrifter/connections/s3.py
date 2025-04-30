@@ -3,6 +3,7 @@ import dataclasses
 import pandas as pd
 from PIL import Image
 import io
+from omegaconf import OmegaConf
 
 from pydrifter.logger import create_logger
 
@@ -34,6 +35,10 @@ class S3Loader(ABC):
         return {"jpg", "jpeg", "png"}
 
     @staticmethod
+    def yaml_extensions():
+        return {"yml", "yaml"}
+
+    @staticmethod
     def read(s3_connection, bucket_name, file_path: str):
         obj = s3_connection.get_object(
             Bucket=f"{bucket_name}",
@@ -51,6 +56,9 @@ class S3Loader(ABC):
         elif file_extension in S3Loader.image_extensions():
             logger.info(f"[IMAGE] Downloaded from 's3://{bucket_name}/{file_path}'. Size: {size_mb:.2f} MB")
             return Image.open(buffer)
+        elif file_extension in S3Loader.yaml_extensions():
+            logger.info(f"[CONFIG] Downloaded from 's3://{bucket_name}/{file_path}'. Size: {size_mb:.2f} MB")
+            return OmegaConf.load(buffer)
         else:
             raise TypeError(f"Unsupported file extension '{file_extension}'")
 
