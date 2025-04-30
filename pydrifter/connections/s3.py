@@ -24,7 +24,7 @@ class S3Config(ABC):
 class S3Loader(ABC):
 
     @staticmethod
-    def table_extentions():
+    def table_extensions():
         return {
             "csv": pd.read_csv,
             "xlsx": pd.read_excel,
@@ -47,9 +47,9 @@ class S3Loader(ABC):
 
         file_extension = file_path.split(".")[-1]
 
-        if file_extension in S3Loader.table_downloaders():
+        if file_extension in S3Loader.table_extensions():
             logger.info(f"[TABLE] Downloaded from 's3://{bucket_name}/{file_path}'. Size: {size_mb:.2f} MB")
-            return S3Loader.table_downloaders()[file_extension](buffer)
+            return S3Loader.table_extensions()[file_extension](buffer)
         elif file_extension in S3Loader.image_extensions():
             logger.info(f"[IMAGE] Downloaded from 's3://{bucket_name}/{file_path}'. Size: {size_mb:.2f} MB")
             return Image.open(buffer)
@@ -76,5 +76,16 @@ class S3Loader(ABC):
         try:
             s3_connection.upload_fileobj(buffer, f"{bucket_name}", f"{file_path}")
             logger.info(f"Successfully uploaded to 's3://{bucket_name}/{file_path}'. File size: {size_mb:.2f} MB")
+        except Exception as e:
+            raise e
+
+    @staticmethod
+    def delete(s3_connection, bucket_name: str, file_path: str):
+        try:
+            s3_connection.delete_object(
+                Bucket=f"{bucket_name}",
+                Key=f"{file_path}"
+            )
+            logger.info(f"Successfully removed 's3://{bucket_name}/{file_path}'")
         except Exception as e:
             raise e

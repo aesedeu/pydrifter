@@ -32,10 +32,7 @@ class DataLoader(ABC):
             raise ValueError("Define S3Config first")
 
         return S3Loader.read(
-            self.s3_connection,
-            bucket_name,
-            file_path,
-            *args, **kwargs
+            self.s3_connection, bucket_name, file_path, *args, **kwargs
         )
 
     def save_to_s3(self, bucket_name, file_path, file, *args, **kwargs):
@@ -44,4 +41,12 @@ class DataLoader(ABC):
 
         return S3Loader.save(
             self.s3_connection, bucket_name, file_path, file, *args, **kwargs
+        )
+
+    def delete_from_s3(self, bucket_name, file_path, *args, **kwargs):
+        if not self.s3_config:
+            raise ValueError("Define S3Config first")
+
+        return S3Loader.delete(
+            self.s3_connection, bucket_name, file_path, *args, **kwargs
         )
