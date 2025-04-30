@@ -22,6 +22,7 @@ class TableDrifter(ABC):
     data_treatment: pd.DataFrame
     data_config: TableConfig
     tests: list[Type[BaseStatisticalTest]]
+    model_version: str = "not_defined"
     _result = None
     _summary = None
 
@@ -93,6 +94,7 @@ class TableDrifter(ABC):
         ╘════════════════╧═══════════════════════════════════════╛
         """
         data = [
+            ["model_version", self.model_version],
             ["data_control", self.data_control.shape],
             ["data_treatment", self.data_treatment.shape],
             ["tests", ", ".join([t.__name__ for t in self.tests])],
@@ -271,6 +273,7 @@ class TableDrifter(ABC):
                     ]].round(4)
 
         result = result_numerical.sort_values("conclusion", ascending=True).reset_index(drop=True)
+        result["model_version"] = self.model_version
         summary = result.groupby("test_name").agg({"conclusion": "value_counts"})
 
         self._result = result

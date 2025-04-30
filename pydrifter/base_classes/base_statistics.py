@@ -45,15 +45,17 @@ class BaseStatisticalTest(ABC):
         quantile_cut,
         statistics,
         conclusion,
+        model_version: str = "not_defined",
         feature_name: str = feature_name,
         feature_type: str = "unknown",
         p_value: str | float = "-",
         left_ci: float | str = "-",
-        right_ci: float | str = "-"
+        right_ci: float | str = "-",
     ) -> pd.DataFrame:
         statistics_result = pd.DataFrame(
             data={
                 "test_datetime": [pendulum.now().to_datetime_string()],
+                "model_version": [model_version],
                 "feature_name": [feature_name],
                 "feature_type": [feature_type],
                 "control_mean": [control_mean],
