@@ -99,10 +99,19 @@ class S3Loader(ABC):
         except Exception as e:
             raise e
 
+    @staticmethod
+    def download_from_s3(s3_connection, bucket_name: str, file_path: str, save_path: str):
+        try:
+            s3_connection.download_file(f"{bucket_name}", file_path, save_path)
+            logger.info(
+                f"Successfully downloaded from 's3://{bucket_name}/{file_path}' to '{save_path}'"
+            )
+        except Exception as e:
+            raise e
+
+    @staticmethod
     def show_s3_content(s3_connection, bucket_name: str):
         total_files = len(s3_connection.list_objects(Bucket=bucket_name)["Contents"])
         print(f"Total files in '{bucket_name}': {total_files:,}\n")
 
         return list(s3_connection.list_objects(Bucket=bucket_name)["Contents"])
-        # for key in s3_connection.list_objects(Bucket=bucket_name)["Contents"]:
-        #     print(key['Key'])

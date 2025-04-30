@@ -61,6 +61,14 @@ class DataLoader(ABC):
             self.s3_connection, bucket_name, file_path, *args, **kwargs
         )
 
+    def download_from_s3(self, bucket_name, file_path, save_path, *args, **kwargs):
+        if not self.s3_config:
+            raise ValueError("Define S3Config first")
+
+        return S3Loader.download_from_s3(
+            self.s3_connection, bucket_name, file_path, save_path, *args, **kwargs
+        )
+
     def show_s3_content(self, bucket_name):
         return S3Loader.show_s3_content(self.s3_connection, bucket_name)
 
