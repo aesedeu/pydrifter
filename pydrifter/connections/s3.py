@@ -24,12 +24,16 @@ class S3Config(ABC):
 class S3Loader(ABC):
 
     @staticmethod
-    def table_downloaders():
+    def table_extentions():
         return {
             "csv": pd.read_csv,
             "xlsx": pd.read_excel,
             "parquet": pd.read_parquet
         }
+
+    @staticmethod
+    def image_extensions():
+        return {"jpg", "jpeg", "png"}
 
     @staticmethod
     def read(s3_connection, bucket_name, file_path: str):
@@ -41,26 +45,29 @@ class S3Loader(ABC):
         buffer = io.BytesIO(raw_data)
         size_mb = len(buffer.getvalue()) / (1024 * 1024)
 
-        file_extention = file_path.split(".")[-1]
+        file_extension = file_path.split(".")[-1]
 
-        if file_extention in S3Loader.table_downloaders().keys():
-            logger.info(f"Successfully downloaded from 's3://{bucket_name}/{file_path}'. File size: {size_mb:.2f} MB")
-            return S3Loader.table_downloaders()[file_extention](buffer)
+        if file_extension in S3Loader.table_downloaders():
+            logger.info(f"[TABLE] Downloaded from 's3://{bucket_name}/{file_path}'. Size: {size_mb:.2f} MB")
+            return S3Loader.table_downloaders()[file_extension](buffer)
+        elif file_extension in S3Loader.image_extensions():
+            logger.info(f"[IMAGE] Downloaded from 's3://{bucket_name}/{file_path}'. Size: {size_mb:.2f} MB")
+            return Image.open(buffer)
         else:
-            raise TypeError(f"Unsupported file extention '{file_extention}'")
+            raise TypeError(f"Unsupported file extension '{file_extension}'")
 
     @staticmethod
     def save(s3_connection, bucket_name: str, file_path: str, file):
         buffer = io.BytesIO()
-        file_extention = file_path.split(".")[-1]
+        file_extension = file_path.split(".")[-1]
 
-        if file_extention == "parquet":
+        if file_extension == "parquet":
             file.to_parquet(buffer, index=False, engine="pyarrow")
-        elif file_extention == "csv":
+        elif file_extension == "csv":
             file.to_csv(buffer, index=False)
-        elif file_extention in ["jpg", "jpeg", "png"]:
+        elif file_extension in S3Loader.image_extensions():
             if isinstance(file, Image.Image):
-                file.save(buffer, format=file_extention.upper())
+                file.save(buffer, format=file_extension.upper())
             else:
                 raise TypeError("Expected a PIL.Image.Image object for image upload.")
 
