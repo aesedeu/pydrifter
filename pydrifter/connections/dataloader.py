@@ -41,7 +41,7 @@ class DataLoader(ABC):
         if not self.s3_config:
             raise ValueError("Define S3Config first")
 
-        return S3Loader.read(
+        return S3Loader.read_from_s3(
             self.s3_connection, bucket_name, file_path, *args, **kwargs
         )
 
@@ -49,7 +49,7 @@ class DataLoader(ABC):
         if not self.s3_config:
             raise ValueError("Define S3Config first")
 
-        return S3Loader.save(
+        return S3Loader.save_to_s3(
             self.s3_connection, bucket_name, file_path, file, *args, **kwargs
         )
 
@@ -57,14 +57,12 @@ class DataLoader(ABC):
         if not self.s3_config:
             raise ValueError("Define S3Config first")
 
-        return S3Loader.delete(
+        return S3Loader.delete_from_s3(
             self.s3_connection, bucket_name, file_path, *args, **kwargs
         )
 
-    def show_s3(self, bucket_name):
-        return S3Loader.show(
-            self.s3_connection, bucket_name
-        )
+    def show_s3_content(self, bucket_name):
+        return S3Loader.show_s3_content(self.s3_connection, bucket_name)
 
     ### POSTGRES ###
     def read_from_postgres(self, sql, *args, **kwargs):

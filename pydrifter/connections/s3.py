@@ -40,7 +40,7 @@ class S3Loader(ABC):
         return {"yml", "yaml"}
 
     @staticmethod
-    def read(s3_connection, bucket_name, file_path: str):
+    def read_from_s3(s3_connection, bucket_name, file_path: str):
         obj = s3_connection.get_object(
             Bucket=f"{bucket_name}",
             Key=f"{file_path}",
@@ -64,7 +64,7 @@ class S3Loader(ABC):
             raise TypeError(f"Unsupported file extension '{file_extension}'")
 
     @staticmethod
-    def save(s3_connection, bucket_name: str, file_path: str, file):
+    def save_to_s3(s3_connection, bucket_name: str, file_path: str, file):
         buffer = io.BytesIO()
         file_extension = file_path.split(".")[-1]
 
@@ -89,7 +89,7 @@ class S3Loader(ABC):
             raise e
 
     @staticmethod
-    def delete(s3_connection, bucket_name: str, file_path: str):
+    def delete_from_s3(s3_connection, bucket_name: str, file_path: str):
         try:
             s3_connection.delete_object(
                 Bucket=f"{bucket_name}",
@@ -99,7 +99,7 @@ class S3Loader(ABC):
         except Exception as e:
             raise e
 
-    def show(s3_connection, bucket_name: str):
+    def show_s3_content(s3_connection, bucket_name: str):
         total_files = len(s3_connection.list_objects(Bucket=bucket_name)["Contents"])
         print(f"Total files in '{bucket_name}': {total_files:,}\n")
 
