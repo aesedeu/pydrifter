@@ -3,6 +3,7 @@ import dataclasses
 import pandas as pd
 from PIL import Image
 import io
+import json
 from omegaconf import OmegaConf
 
 from pydrifter.logger import create_logger
@@ -76,6 +77,8 @@ class S3Loader(ABC):
                 file.save(buffer, format=file_extension.upper())
             else:
                 raise TypeError("Expected a PIL.Image.Image object for image upload.")
+        else:
+            raise TypeError("Unknown datatype of the file")
 
         buffer.seek(0)
         size_mb = len(buffer.getvalue()) / (1024 * 1024)
@@ -95,3 +98,11 @@ class S3Loader(ABC):
             logger.info(f"Successfully removed 's3://{bucket_name}/{file_path}'")
         except Exception as e:
             raise e
+
+    def show(s3_connection, bucket_name: str):
+        total_files = len(s3_connection.list_objects(Bucket=bucket_name)["Contents"])
+        print(f"Total files in '{bucket_name}': {total_files:,}\n")
+
+        return list(s3_connection.list_objects(Bucket=bucket_name)["Contents"])
+        # for key in s3_connection.list_objects(Bucket=bucket_name)["Contents"]:
+        #     print(key['Key'])

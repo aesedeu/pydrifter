@@ -61,6 +61,11 @@ class DataLoader(ABC):
             self.s3_connection, bucket_name, file_path, *args, **kwargs
         )
 
+    def show_s3(self, bucket_name):
+        return S3Loader.show(
+            self.s3_connection, bucket_name
+        )
+
     ### POSTGRES ###
     def read_from_postgres(self, sql, *args, **kwargs):
         if not self.postgres_config:
