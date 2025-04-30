@@ -154,8 +154,20 @@ class TableDrifter(ABC):
             for col in self.data_control.columns
             if control_dtypes[col] != treatment_dtypes[col]
         }
+
         if mismatched_types:
-            raise TypeError(f"Data type mismatch found in columns: {mismatched_types}")
+            logger.info("Found mismatch in datatypes:".ljust(50, ".") + " ⚠️ WARNING")
+            print(pd.DataFrame(mismatched_types, index=["control", "test"]))
+            if self.data_config.wrong_datatypes == "fix":
+                try:
+                    for col in mismatched_types.keys():
+                        dtype = self.data_control.loc[:, col].dtype
+                        self.data_treatment.loc[:, col] = self.data_treatment.loc[:, col].astype(dtype)
+                    logger.info("Mismatch in datatypes fixed:".ljust(50, ".") + " ✅ OK")
+                except Exception as e:
+                    raise e
+            else:
+                raise TypeError(f"Data type mismatch found in columns: {mismatched_types}")
         else:
             logger.info("Data types in datasets columns:".ljust(50, ".") + " ✅ OK")
 

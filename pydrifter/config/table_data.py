@@ -49,6 +49,7 @@ class TableConfig(ABC):
     numerical: list[str]
     datetime: list[str]
     nan_strategy: str = "fill"
+    wrong_datatypes: str = "fix"
     target: Union[str] = "NOT DEFINED"
     quantiles_cut: bool | float = False
 
@@ -105,7 +106,8 @@ class TableConfig(ABC):
                 ", ".join(self.datetime) if self.datetime else "None",
             ],
             ["NaN strategy", self.nan_strategy],
-            ["quantiles_cut", self.quantiles_cut],
+            ["Wrong datatypes strategy", self.wrong_datatypes],
+            ["Quantiles cut", self.quantiles_cut],
         ]
         return tabulate(data, headers=["Parameter", "Value"], tablefmt="fancy_grid")
 
