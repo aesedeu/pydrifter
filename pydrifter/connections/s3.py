@@ -2,6 +2,7 @@ from abc import ABC
 import dataclasses
 from typing import Any
 import pandas as pd
+from PIL import Image
 import io
 from boto3.exceptions import S3UploadFailedError
 
@@ -31,7 +32,7 @@ class S3Loader(ABC):
         }
 
     @staticmethod
-    def download(s3_connection, bucket_name, file_path: str):
+    def read(s3_connection, bucket_name, file_path: str):
         obj = s3_connection.get_object(
             Bucket=f"{bucket_name}",
             Key=f"{file_path}",
@@ -49,7 +50,7 @@ class S3Loader(ABC):
             raise TypeError(f"Unsupported file extention '{file_extention}'")
 
     @staticmethod
-    def upload(s3_connection, bucket_name: str, file_path: str, file):
+    def save(s3_connection, bucket_name: str, file_path: str, file):
         buffer = io.BytesIO()
         file_extention = file_path.split(".")[-1]
 
@@ -57,6 +58,11 @@ class S3Loader(ABC):
             file.to_parquet(buffer, index=False, engine="pyarrow")
         elif file_extention == "csv":
             file.to_csv(buffer, index=False)
+        elif file_extention in ["jpg", "jpeg", "png"]:
+            if isinstance(file, Image.Image):
+                file.save(buffer, format=file_extention.upper())
+            else:
+                raise TypeError("Expected a PIL.Image.Image object for image upload.")
 
         buffer.seek(0)
         size_mb = len(buffer.getvalue()) / (1024 * 1024)

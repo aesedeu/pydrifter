@@ -27,21 +27,21 @@ class DataLoader(ABC):
     def s3_configuration(self):
         return self.s3_config
 
-    def download_from_s3(self, bucket_name, file_path, *args, **kwargs):
+    def read_from_s3(self, bucket_name, file_path, *args, **kwargs):
         if not self.s3_config:
             raise ValueError("Define S3Config first")
 
-        return S3Loader.download(
+        return S3Loader.read(
             self.s3_connection,
             bucket_name,
             file_path,
             *args, **kwargs
         )
 
-    def upload_to_s3(self, bucket_name, file_path, file, *args, **kwargs):
+    def save_to_s3(self, bucket_name, file_path, file, *args, **kwargs):
         if not self.s3_config:
             raise ValueError("Define S3Config first")
 
-        return S3Loader.upload(
+        return S3Loader.save(
             self.s3_connection, bucket_name, file_path, file, *args, **kwargs
         )
