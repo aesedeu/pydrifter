@@ -10,7 +10,7 @@ from termcolor import colored
 
 
 class CustomConsoleLogger(logging.Formatter):
-    FMT = "[{levelname:^10}] - {asctime}: {message}"
+    FMT = "(pydrifter) {levelname}:     {message} ({asctime})"
     FORMATS = {
         logging.DEBUG: colored(FMT, "light_grey"),
         logging.INFO: colored(FMT),
@@ -27,7 +27,7 @@ class CustomConsoleLogger(logging.Formatter):
 
 
 class CustomFileLogger(logging.Formatter):
-    FMT = "[{levelname:^10}] - {asctime}: {message}"
+    FMT = "(pydrifter) {levelname}:     {message} ({asctime})"
 
     def format(self, record):
         # Формат для файла
@@ -59,9 +59,10 @@ def create_logger(
 
     assert level in list(logs), "Неверный уровень логирования (debug/info/warning/error/critical)"
 
-    log = logging.getLogger()
+    log = logging.getLogger("pydrifter")
     log.addHandler(console_handler)
     # log.addHandler(file_handler)
+    log.propagate = False
 
     log.setLevel(logs[level])
 
