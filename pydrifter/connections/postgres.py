@@ -55,17 +55,23 @@ class PostgresLoader(ABC):
         chunk_size: int | None = None,
         if_exists: str = "append"
     ):
-        return data.to_sql(
-            name=table_name,
-            con=postgres_connection.connection_engine(),
-            schema=schema,
-            index=False,
-            if_exists=if_exists,
-            chunksize=chunk_size,
-        )
+        try:
+            data.to_sql(
+                name=table_name,
+                con=postgres_connection.connection_engine(),
+                schema=schema,
+                index=False,
+                if_exists=if_exists,
+                chunksize=chunk_size,
+            )
+            logger.info(
+                f"Succesfully uploaded to '{schema}.{table_name}' {data.shape[0]} lines"
+            )
+        except:
+            raise ConnectionError(f"Can't upload the data to '{table_name}'")
 
         # TODO: figure out with this garbage
-        
+
         # for col in data.columns:
         #     if pd.api.types.is_datetime64_any_dtype(data[col]):
         #         data[col] = data[col].dt.strftime("%Y-%m-%d")
