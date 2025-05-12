@@ -39,10 +39,10 @@ class CustomFileLogger(logging.Formatter):
 console_handler = logging.StreamHandler()
 console_handler.setFormatter(CustomConsoleLogger())
 
-# Настройка обработчика для файла
-file_handler = logging.FileHandler(f"logs/{pendulum.now().to_date_string()}.log")
-file_handler.setFormatter(CustomFileLogger())
-file_handler.setLevel(logging.INFO)  # Устанавливаем уровень логирования для файла
+# # Настройка обработчика для файла
+# file_handler = logging.FileHandler(f"logs/{pendulum.now().to_date_string()}.log")
+# file_handler.setFormatter(CustomFileLogger())
+# file_handler.setLevel(logging.INFO)  # Устанавливаем уровень логирования для файла
 
 
 def create_logger(
